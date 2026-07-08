@@ -248,6 +248,9 @@ function render(){
   const el=document.getElementById("content");
   const hint=document.getElementById("filterHint");
   hint.textContent = filter ? `filtering “${filter}”` : "";
+  // The team filter does nothing on Overview, so hide it there only.
+  const toolbar=document.querySelector(".toolbar");
+  if(toolbar) toolbar.style.display = (activeTab==="Overview") ? "none" : "";
   if(DATA.is_sample) el.innerHTML=`<div class="sample-banner">⚠ SAMPLE DATA — live sources were unavailable.</div>`; else el.innerHTML="";
   if(activeTab==="Overview") el.insertAdjacentHTML("beforeend",renderOverview());
   else if(activeTab==="Bracket") el.insertAdjacentHTML("beforeend",renderBracket());

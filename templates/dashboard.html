@@ -317,13 +317,29 @@ function renderGroupStage(){
   return h;
 }
 
+/* Small note under the score for extra-time / penalty results. */
+function shootoutNote(m){
+  if(m.pens){
+    const wp=m.winner===m.home?m.pens.home:m.pens.away;
+    const lp=m.winner===m.home?m.pens.away:m.pens.home;
+    return `<div class="kick">${esc(m.winner)} win ${wp}–${lp} on pens${m.aet?" (a.e.t.)":""}</div>`;
+  }
+  if(m.aet) return `<div class="kick">(a.e.t.)</div>`;
+  return "";
+}
+
 /* ---------- Match card ---------- */
 function matchCard(m){
   const played=m.played, tbd=m.is_tbd;
   const hs=m.home_score, as=m.away_score;
-  const homeWin=played&&hs>as, awayWin=played&&as>hs;
+  // Bold the team that ACTUALLY advanced (handles ET/penalty winners on a draw).
+  const homeWin=played&&(m.winner?m.winner===m.home:hs>as);
+  const awayWin=played&&(m.winner?m.winner===m.away:as>hs);
   let mid;
-  if(played) mid=`<div class="score"><span class="${homeWin?'':'wl'}">${hs}</span> – <span class="${awayWin?'':'wl'}">${as}</span></div>`;
+  if(played){
+    mid=`<div class="score"><span class="${homeWin?'':'wl'}">${hs}</span> – <span class="${awayWin?'':'wl'}">${as}</span></div>`;
+    mid+=shootoutNote(m);
+  }
   else if(tbd) mid=`<span class="pill tbd">TBD</span>`;
   else if(m.prediction) mid=`<span class="pill">▶ ${esc(m.prediction.prediction)} · ${m.prediction.confidence}%</span>`;
   else mid=`<span class="pill tbd">—</span>`;
@@ -353,7 +369,12 @@ function detailHTML(m){
 
 function finishedDetail(m){
   const tH=DATA.teams[m.home]||{}, tA=DATA.teams[m.away]||{};
-  let h=`<div class="kv" style="margin-bottom:10px">Final score: <b>${m.home_score}–${m.away_score}</b>`+
+  let penTxt="";
+  if(m.pens){
+    const wp=m.winner===m.home?m.pens.home:m.pens.away, lp=m.winner===m.home?m.pens.away:m.pens.home;
+    penTxt=` ${m.aet?"(a.e.t.) ":""}· <b>${esc(m.winner)} win ${wp}–${lp} on penalties</b>`;
+  } else if(m.aet){ penTxt=" (a.e.t.)"; }
+  let h=`<div class="kv" style="margin-bottom:10px">Final score: <b>${m.home_score}–${m.away_score}</b>${penTxt}`+
         `${m.venue?` · ${esc(m.venue)}${m.city?", "+esc(m.city):""}`:""}</div>`;
   h+=`<div class="grid2">
     <div class="blk"><h5>${esc(m.home)} — form going in</h5>${formBlock({results:m.home_form})}</div>
@@ -420,9 +441,12 @@ function renderBracket(){
 function bMatch(m){
   if(m.is_tbd) return `<div class="bmatch"><div class="t tbd">${esc(m.home)}</div><div class="t tbd">${esc(m.away)}</div></div>`;
   const hs=m.home_score,as=m.away_score,played=m.played;
-  const hw=played&&hs>as, aw=played&&as>hs;
-  const sc=played?` <b>${hs}</b>`:"";
-  const scA=played?` <b>${as}</b>`:"";
+  // Winner = who advanced (penalty/ET winner on a draw), not just higher score.
+  const hw=played&&(m.winner?m.winner===m.home:hs>as);
+  const aw=played&&(m.winner?m.winner===m.away:as>hs);
+  const pH=m.pens?` (${m.pens.home})`:"", pA=m.pens?` (${m.pens.away})`:"";
+  const sc=played?` <b>${hs}${pH}</b>`:"";
+  const scA=played?` <b>${as}${pA}</b>`:"";
   return `<div class="bmatch">
     <div class="t ${hw?'win':(played?'lose':'')}"><span>${flagInline(m.home)}${esc(m.home)}</span><span>${sc}</span></div>
     <div class="t ${aw?'win':(played?'lose':'')}"><span>${flagInline(m.away)}${esc(m.away)}</span><span>${scA}</span></div>

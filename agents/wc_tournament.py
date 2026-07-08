@@ -140,6 +140,24 @@ def _parse_box(box, stage, group):
     london_dt, kickoff_iso = to_london(date_iso, time_raw)
     is_tbd = not (_is_real_team(home) and _is_real_team(away))
 
+    hs = int(sm.group(1)) if sm else None
+    aws = int(sm.group(2)) if sm else None
+
+    # Extra time / penalty shootout (knockout matches). Wikipedia keeps the
+    # shootout aggregate in the box text as "Penalties ... 3–4 ...".
+    aet = "a.e.t" in score_txt.lower()
+    pens = _parse_penalties(box)
+
+    # Who actually advanced.
+    winner = None
+    if played:
+        if hs > aws:
+            winner = home
+        elif aws > hs:
+            winner = away
+        elif pens:
+            winner = home if pens["home"] > pens["away"] else away
+
     return {
         "stage": stage,
         "stage_order": STAGES_ORDER.index(stage) if stage in STAGES_ORDER else 99,
@@ -152,11 +170,26 @@ def _parse_box(box, stage, group):
         "city": city,
         "home": home,
         "away": away,
-        "home_score": int(sm.group(1)) if sm else None,
-        "away_score": int(sm.group(2)) if sm else None,
+        "home_score": hs,
+        "away_score": aws,
+        "aet": aet,
+        "pens": pens,          # {"home": int, "away": int} or None
+        "winner": winner,      # advancing team, or None for a true draw
         "played": played,
         "is_tbd": is_tbd,
     }
+
+
+def _parse_penalties(box):
+    """Return {'home': X, 'away': Y} from a shootout, or None if there wasn't one."""
+    text = _clean(box.get_text(" "))
+    m = re.search(r"Penalt(?:y|ies)\b(.*)", text, re.IGNORECASE)
+    if not m:
+        return None
+    ms = _SCORE_RE.search(m.group(1))
+    if not ms:
+        return None
+    return {"home": int(ms.group(1)), "away": int(ms.group(2))}
 
 
 def _parse_venue(right_el):

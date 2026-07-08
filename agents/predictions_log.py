@@ -69,11 +69,19 @@ def resolve(log, matches, now_iso):
         m = by_key.get(r["key"])
         if m and m.get("played") and m.get("home_score") is not None:
             hs, as_ = m["home_score"], m["away_score"]
-            actual = _side(hs, as_)
+            # In a knockout decided by ET/penalties, judge by who advanced.
+            w = m.get("winner")
+            if w == m["home"]:
+                actual = "home"
+            elif w == m["away"]:
+                actual = "away"
+            else:
+                actual = _side(hs, as_)
             r.update({
                 "actual_home": hs, "actual_away": as_, "actual_side": actual,
                 "actual_winner": (m["home"] if actual == "home"
                                   else m["away"] if actual == "away" else "Draw"),
+                "pens": m.get("pens"),
                 "correct": r["predicted_side"] == actual,
                 "resolved": True, "resolved_at": now_iso,
             })

@@ -170,6 +170,7 @@
   <div id="liveNote"></div>
   <div class="toolbar">
     <input class="search" id="search" placeholder="🔎 Filter by team (e.g. England, Argentina)…" oninput="onFilter(this.value)">
+    <button class="btn" id="clearBtn" onclick="clearFilter()" style="display:none">✕ Clear</button>
     <span class="hint" id="filterHint"></span>
   </div>
   <div id="content"></div>
@@ -237,7 +238,16 @@ function buildTabs(){
     `<div class="tab ${t===activeTab?'active':''}" onclick="setTab('${esc(t)}')">${esc(t)}</div>`).join("");
 }
 function setTab(t){activeTab=t;buildTabs();render();window.scrollTo({top:0,behavior:'smooth'});}
-function onFilter(v){filter=v.trim().toLowerCase();render();}
+function onFilter(v){
+  filter=v.trim().toLowerCase();
+  const cb=document.getElementById("clearBtn");
+  if(cb) cb.style.display = v ? "inline-flex" : "none";
+  render();
+}
+function clearFilter(){
+  const s=document.getElementById("search");
+  s.value=""; onFilter(""); s.focus();
+}
 function matchesFor(stage){
   let ms=(DATA.matches||[]).filter(m=>m.stage===stage);
   if(filter) ms=ms.filter(m=>(m.home+" "+m.away).toLowerCase().includes(filter));

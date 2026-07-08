@@ -57,10 +57,16 @@ def build_and_save():
     log.info("%d upcoming playable fixture(s) to predict", len(upcoming))
 
     teams_in_play = sorted({m["home"] for m in upcoming} | {m["away"] for m in upcoming})
+    teams_all = sorted({m["home"] for m in matches if not m["is_tbd"]}
+                       | {m["away"] for m in matches if not m["is_tbd"]})
 
     form = _build_form(teams_in_play, played)
-    squads = _build_squads(teams_in_play)
+    squads = _build_squads(teams_all)   # all teams — still a single squads-page fetch
     _predict(upcoming, form, squads)
+
+    # Attach "form going in" to every finished match, computed from results we
+    # already have (no extra scraping) so their detail panels are worth opening.
+    _attach_finished_form(matches, played)
 
     # ---- Forward-only prediction log: record new, resolve finished --------- #
     now_iso = datetime.now().isoformat(timespec="seconds")
@@ -91,7 +97,7 @@ def build_and_save():
         "stages_order": tour["stages_order"],
         "groups": tour["groups"],
         "matches": matches,
-        "teams": {t: {"form": form.get(t), "squad": squads.get(t)} for t in teams_in_play},
+        "teams": {t: {"form": form.get(t), "squad": squads.get(t)} for t in teams_all},
         "accuracy": accuracy,
         "stats": _stats(matches, tour["groups"], upcoming),
         "counts": {
@@ -111,6 +117,31 @@ def build_and_save():
 def _build_form(teams, played):
     fa = FormAnalyst()
     return {t: fa._form_for_team(t, played) for t in teams}
+
+
+def _attach_finished_form(matches, played, n=5):
+    """For each finished match, attach each team's last N results BEFORE it."""
+    fa = FormAnalyst()
+    for m in matches:
+        if not (m.get("played") and not m.get("is_tbd")):
+            continue
+        m["home_form"] = _form_before(fa, m["home"], m.get("date_iso"), played, n)
+        m["away_form"] = _form_before(fa, m["away"], m.get("date_iso"), played, n)
+
+
+def _form_before(fa, team, date_iso, played, n):
+    """Results for `team` strictly before `date_iso`, most-recent first."""
+    out = []
+    for pm in played:
+        d = pm.get("date")
+        if date_iso and d and d >= date_iso:
+            continue
+        if team == pm["home"]:
+            out.append(fa._as_result(team, pm, True))
+        elif team == pm["away"]:
+            out.append(fa._as_result(team, pm, False))
+    out.sort(key=lambda r: r["date"] or "0000", reverse=True)
+    return out[:n]
 
 
 def _build_squads(teams):

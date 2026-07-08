@@ -1,0 +1,66 @@
+name: Build & deploy World Cup dashboard
+
+# Re-scrapes live data and redeploys the static site.
+on:
+  # Auto-refresh predictions & standings every 30 minutes. Adjust as you like.
+  schedule:
+    - cron: "*/30 * * * *"
+  # Rebuild on every push to main.
+  push:
+    branches: [main]
+  # Let you trigger a refresh manually from the Actions tab.
+  workflow_dispatch:
+
+permissions:
+  contents: write   # needed to commit the predictions log back
+  pages: write
+  id-token: write
+
+# Only one deploy at a time; a newer run supersedes an in-progress one.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Scrape live data and build the static site
+        run: python build_static.py
+
+      - name: Commit updated predictions log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add predictions_log.json
+          if git diff --staged --quiet; then
+            echo "No prediction-log changes."
+          else
+            git commit -m "Update predictions log [skip ci]"
+            git push
+          fi
+
+      - name: Upload site artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

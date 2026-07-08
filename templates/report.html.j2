@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Cup 2026 — Match Analysis ({{ generated_date }})</title>
+<style>
+  :root {
+    --bg:#0b1220; --panel:#111c33; --panel2:#0e1830; --line:#1e2c4a;
+    --ink:#e8eefc; --muted:#8ea3c9; --accent:#22c55e; --accent2:#38bdf8;
+    --win:#22c55e; --draw:#f59e0b; --loss:#ef4444;
+    --home:#22c55e; --neutral:#64748b; --away:#6366f1;
+    --shadow:0 10px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; background:radial-gradient(1200px 600px at 50% -200px,#16233f,var(--bg));
+    color:var(--ink); font-family:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.5; padding-bottom:48px;
+  }
+  .wrap { max-width:1040px; margin:0 auto; padding:0 20px; }
+  header.hero {
+    text-align:center; padding:56px 20px 32px;
+    background:linear-gradient(180deg,rgba(34,197,94,.10),transparent);
+    border-bottom:1px solid var(--line);
+  }
+  .hero .kicker { letter-spacing:.28em; text-transform:uppercase; color:var(--accent);
+    font-size:12px; font-weight:700; }
+  .hero h1 { margin:.3em 0 .15em; font-size:clamp(28px,5vw,44px); font-weight:800; }
+  .hero .sub { color:var(--muted); font-size:15px; }
+  .hero .meta { margin-top:14px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .chip { background:var(--panel); border:1px solid var(--line); border-radius:999px;
+    padding:6px 14px; font-size:13px; color:var(--muted); }
+  .chip b { color:var(--ink); }
+  .banner-sample {
+    max-width:1040px; margin:20px auto 0; padding:12px 18px; border-radius:12px;
+    background:rgba(245,158,11,.12); border:1px solid rgba(245,158,11,.5);
+    color:#fcd34d; font-weight:600; text-align:center; font-size:14px;
+  }
+  .grid { display:grid; gap:24px; margin-top:28px; }
+
+  .card { background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line); border-radius:18px; box-shadow:var(--shadow);
+    overflow:hidden; }
+  .card-top { display:flex; justify-content:space-between; align-items:center;
+    gap:12px; padding:14px 20px; border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.02); font-size:13px; color:var(--muted); }
+  .card-top .stage { color:var(--accent2); font-weight:700; letter-spacing:.04em; }
+
+  .matchup { display:grid; grid-template-columns:1fr auto 1fr; align-items:center;
+    gap:12px; padding:26px 20px 10px; }
+  .team { display:flex; flex-direction:column; align-items:center; gap:10px; text-align:center; }
+  .crest { width:74px; height:52px; object-fit:cover; border-radius:8px;
+    border:1px solid rgba(255,255,255,.18); box-shadow:0 6px 14px rgba(0,0,0,.4); }
+  .flag-sm { width:20px; height:14px; object-fit:cover; border-radius:3px;
+    border:1px solid rgba(255,255,255,.18); vertical-align:middle; margin-right:6px;
+    display:inline-block; }
+  .crest-fallback { width:74px; height:74px; border-radius:50%; display:flex;
+    align-items:center; justify-content:center; font-weight:800; font-size:24px;
+    color:#fff; box-shadow:0 6px 14px rgba(0,0,0,.4); }
+  .team .name { font-weight:700; font-size:18px; }
+  .vs { font-weight:800; color:var(--muted); font-size:15px; letter-spacing:.1em;
+    display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .pick { display:inline-block; padding:5px 12px; border-radius:999px; font-size:12px;
+    font-weight:700; background:rgba(34,197,94,.15); color:var(--accent);
+    border:1px solid rgba(34,197,94,.4); }
+
+  .probwrap { padding:6px 20px 20px; }
+  .probbar { display:flex; height:34px; border-radius:10px; overflow:hidden;
+    border:1px solid var(--line); font-size:12px; font-weight:700; }
+  .probbar > div { display:flex; align-items:center; justify-content:center; color:#08111f;
+    min-width:34px; white-space:nowrap; }
+  .seg-home { background:var(--home); }
+  .seg-draw { background:var(--draw); }
+  .seg-away { background:var(--away); color:#fff; }
+  .problabels { display:flex; justify-content:space-between; margin-top:8px;
+    font-size:12px; color:var(--muted); }
+  .problabels b { color:var(--ink); }
+
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:0; border-top:1px solid var(--line); }
+  .col { padding:16px 20px; }
+  .col + .col { border-left:1px solid var(--line); }
+  .col h4 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); }
+  .form-pills { display:flex; gap:6px; flex-wrap:wrap; }
+  .pill { width:auto; min-width:26px; padding:3px 7px; border-radius:7px; font-size:12px;
+    font-weight:800; color:#08111f; text-align:center; }
+  .pill.W { background:var(--win); } .pill.D { background:var(--draw); }
+  .pill.L { background:var(--loss); color:#fff; }
+  .form-list { margin:10px 0 0; padding:0; list-style:none; font-size:13px; color:var(--muted); }
+  .form-list li { display:flex; justify-content:space-between; padding:3px 0;
+    border-bottom:1px dashed var(--line); }
+  .form-list li:last-child { border-bottom:0; }
+
+  .section { padding:16px 20px; border-top:1px solid var(--line); }
+  .section h4 { margin:0 0 10px; font-size:12px; text-transform:uppercase;
+    letter-spacing:.08em; color:var(--muted); }
+  .h2h-line { font-size:14px; }
+  .h2h-line .rec { font-weight:700; color:var(--ink); }
+  .players { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .players ul { margin:0; padding:0; list-style:none; }
+  .players li { padding:5px 0; font-size:13px; display:flex; justify-content:space-between;
+    gap:8px; border-bottom:1px dashed var(--line); }
+  .players li:last-child { border-bottom:0; }
+  .players .pos { color:var(--muted); font-size:11px; font-weight:700; margin-right:6px; }
+  .players .stat { color:var(--muted); font-size:12px; white-space:nowrap; }
+  .cap { color:var(--accent); font-weight:800; margin-left:4px; }
+  .rationale { margin:6px 0 0; padding-left:18px; font-size:13px; color:var(--muted); }
+  .rationale li { margin:3px 0; }
+  .badge-src { font-size:11px; color:var(--muted); border:1px solid var(--line);
+    border-radius:6px; padding:1px 6px; margin-left:6px; }
+  .na { color:var(--muted); font-style:italic; font-size:13px; }
+
+  footer { max-width:1040px; margin:36px auto 0; padding:22px 20px; color:var(--muted);
+    font-size:12.5px; border-top:1px solid var(--line); text-align:center; }
+  footer .weights { margin-top:8px; }
+  a { color:var(--accent2); text-decoration:none; }
+  @media (max-width:640px){
+    .matchup{grid-template-columns:1fr auto 1fr;}
+    .cols{grid-template-columns:1fr;} .col+.col{border-left:0;border-top:1px solid var(--line);}
+    .players{grid-template-columns:1fr;}
+    .crest,.crest-fallback{width:56px;height:56px;font-size:20px;}
+  }
+</style>
+</head>
+<body>
+{#- ---------------- reusable macros (defined before use) ---------------- -#}
+{% macro crest(team) -%}
+  {%- set url = flags.get(team) -%}
+  {%- set color = colors.get(team, default_color) -%}
+  {%- if url -%}
+    <img class="crest" src="{{ url }}" alt="{{ team }} flag"
+      onerror="this.onerror=null;this.outerHTML='<div class=&quot;crest-fallback&quot; style=&quot;background:{{ color }}&quot;>{{ team[:3]|upper }}</div>'">
+  {%- else -%}
+    <div class="crest-fallback" style="background:{{ color }}">{{ team[:3]|upper }}</div>
+  {%- endif -%}
+{%- endmacro %}
+
+{% macro flag_sm(team) -%}
+  {%- set url = flags.get(team) -%}
+  {%- if url -%}<img class="flag-sm" src="{{ url }}" alt="" onerror="this.remove()">{%- endif -%}
+{%- endmacro %}
+
+{% macro form_block(form) -%}
+  {% if form and form.results %}
+    <div class="form-pills">
+      {% for r in form.results %}<span class="pill {{ r.result }}">{{ r.result }}</span>{% endfor %}
+    </div>
+    <ul class="form-list">
+      {% for r in form.results %}
+        <li><span>{{ r.result }} {{ r.score }} vs {{ flag_sm(r.opponent) }}{{ r.opponent }}</span><span>{{ r.comp }}</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="na">No recent form data.</div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro players_block(team, squad) -%}
+  <div style="font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px">
+    {{ team }}{% if squad and squad.coach %} &middot; {{ squad.coach }}{% endif %}
+    {% if squad and squad.formation and squad.formation != 'Not reported' %} &middot; {{ squad.formation }}{% endif %}
+  </div>
+  {% if squad and squad.key_players %}
+    <ul>
+      {% for p in squad.key_players %}
+        <li>
+          <span><span class="pos">{{ p.pos or '' }}</span>{{ p.name }}{% if p.captain %}<span class="cap">(C)</span>{% endif %}</span>
+          <span class="stat">{{ p.caps }} caps &middot; {{ p.goals }} gls</span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <div class="na">No squad data.</div>
+  {% endif %}
+  {% if squad and squad.injuries %}
+    <div style="margin-top:8px;font-size:12px;color:var(--loss)">Injuries: {{ squad.injuries|join(', ') }}</div>
+  {% endif %}
+{%- endmacro %}
+
+<header class="hero">
+  <div class="kicker">FIFA World Cup 2026 &middot; USA &middot; Canada &middot; Mexico</div>
+  <h1>Match Analysis &amp; Predictions</h1>
+  <div class="sub">The next {{ matches|length }} upcoming fixture{{ 's' if matches|length != 1 else '' }} — analysed by a six-agent pipeline</div>
+  <div class="meta">
+    <span class="chip">Generated <b>{{ generated_at }}</b></span>
+    <span class="chip">Data source: <b>{{ source_label }}</b></span>
+    <span class="chip">Model: <b>Form &middot; H2H &middot; Squad &middot; Host</b></span>
+  </div>
+</header>
+
+{% if is_sample %}
+<div class="banner-sample">⚠ SAMPLE DATA — live fixtures were unavailable, so this report uses the bundled sample dataset for demonstration.</div>
+{% endif %}
+
+<div class="wrap">
+  <div class="grid">
+  {% for m in matches %}
+    <article class="card">
+      <div class="card-top">
+        <span class="stage">{{ m.stage or 'World Cup 2026' }}</span>
+        <span>{{ m.date_label }}{% if m.time %} &middot; {{ m.time }}{% endif %}{% if m.venue %} &middot; {{ m.venue }}{% if m.city %}, {{ m.city }}{% endif %}{% endif %}</span>
+      </div>
+
+      <div class="matchup">
+        <div class="team">
+          {{ crest(m.home) }}
+          <div class="name">{{ m.home }}</div>
+        </div>
+        <div class="vs">
+          <span>VS</span>
+          <span class="pick">▶ {{ m.prediction }} &middot; {{ m.confidence }}%</span>
+        </div>
+        <div class="team">
+          {{ crest(m.away) }}
+          <div class="name">{{ m.away }}</div>
+        </div>
+      </div>
+
+      <div class="probwrap">
+        <div class="probbar">
+          <div class="seg-home" style="width:{{ m.prob.home }}%">{% if m.prob.home >= 12 %}{{ m.prob.home }}%{% endif %}</div>
+          <div class="seg-draw" style="width:{{ m.prob.draw }}%">{% if m.prob.draw >= 12 %}{{ m.prob.draw }}%{% endif %}</div>
+          <div class="seg-away" style="width:{{ m.prob.away }}%">{% if m.prob.away >= 12 %}{{ m.prob.away }}%{% endif %}</div>
+        </div>
+        <div class="problabels">
+          <span><b>{{ m.home }}</b> win {{ m.prob.home }}%</span>
+          <span>Draw {{ m.prob.draw }}%</span>
+          <span><b>{{ m.away }}</b> win {{ m.prob.away }}%</span>
+        </div>
+      </div>
+
+      <div class="cols">
+        <div class="col">
+          <h4>{{ m.home }} — recent form</h4>
+          {{ form_block(m.home_form) }}
+        </div>
+        <div class="col">
+          <h4>{{ m.away }} — recent form</h4>
+          {{ form_block(m.away_form) }}
+        </div>
+      </div>
+
+      <div class="section">
+        <h4>Head-to-head</h4>
+        {% if m.h2h %}
+          <div class="h2h-line">
+            <span class="rec">{{ m.h2h.played }} all-time meetings</span> —
+            {{ m.home }} <b>{{ m.h2h.home_wins }}W</b>,
+            <b>{{ m.h2h.draws }}D</b>,
+            {{ m.away }} <b>{{ m.h2h.away_wins }}W</b>
+            <span class="badge-src">{{ m.h2h.source }}</span>
+          </div>
+        {% else %}
+          <div class="na">No all-time head-to-head record available for this pairing.</div>
+        {% endif %}
+      </div>
+
+      <div class="section">
+        <h4>Key players &amp; setup</h4>
+        <div class="players">
+          <div>{{ players_block(m.home, m.home_squad) }}</div>
+          <div>{{ players_block(m.away, m.away_squad) }}</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h4>Why this prediction</h4>
+        <ul class="rationale">
+          {% for r in m.rationale %}<li>{{ r }}</li>{% endfor %}
+        </ul>
+      </div>
+    </article>
+  {% endfor %}
+  </div>
+</div>
+
+<footer>
+  <div>Generated by the <b>World Cup 2026 Match Analyser</b> — a six-agent Python pipeline
+    (Fixtures &middot; Form &middot; H2H &middot; Squads → Analyst → Report).</div>
+  <div class="weights">Prediction weights — Form {{ (weights.form*100)|int }}% &middot;
+    H2H {{ (weights.h2h*100)|int }}% &middot; Squad {{ (weights.squad*100)|int }}% &middot;
+    Host {{ (weights.host*100)|int }}% (renormalised over available signals).</div>
+  <div style="margin-top:8px">Primary source: Wikipedia. Predictions are a transparent statistical
+    model for entertainment/educational purposes — not betting advice.</div>
+</footer>
+</body>
+</html>

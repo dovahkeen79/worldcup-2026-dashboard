@@ -1,0 +1,15 @@
+# Generated artefacts
+data/*.json
+logs/*.log
+reports/*.html
+# static site — rebuilt & deployed by GitHub Actions
+docs/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Scratch
+scratch_*.txt

@@ -2,9 +2,9 @@ name: Build & deploy World Cup dashboard
 
 # Re-scrapes live data and redeploys the static site.
 on:
-  # Auto-refresh predictions & standings every 30 minutes. Adjust as you like.
+  # Auto-refresh predictions & standings every 15 minutes. Adjust as you like.
   schedule:
-    - cron: "*/30 * * * *"
+    - cron: "*/15 * * * *"
   # Rebuild on every push to main.
   push:
     branches: [main]

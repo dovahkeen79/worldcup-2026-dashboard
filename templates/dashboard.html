@@ -261,7 +261,8 @@ function renderOverview(){
   const c=DATA.counts||{}, s=DATA.stats||{}, acc=DATA.accuracy||{resolved:0,correct:0,pct:0};
   const accN = acc.resolved ? `${acc.correct}/${acc.resolved}` : "—";
   const accL = acc.resolved ? `Model accuracy · ${acc.pct}%` : "Model accuracy";
-  let h=`<div class="stat-row">
+  LIVE.nowSig="";   // fresh Overview DOM -> force the "Live now" section to repopulate
+  let h=`<div id="liveNowSection"></div><div class="stat-row">
     <div class="stat"><div class="n">${c.matches||0}</div><div class="l">Matches</div></div>
     <div class="stat"><div class="n">${c.played||0}</div><div class="l">Played</div></div>
     <div class="stat"><div class="n">${c.upcoming||0}</div><div class="l">Upcoming</div></div>
@@ -420,6 +421,7 @@ const LIVE = {
   sport: "Soccer",
   state: {},         // match_id -> {status:'live'|'ft', hs, as, minute}
   timer: null,
+  nowSig: "",        // signature of the Overview "Live now" set (rebuild only on change)
 };
 // API team name -> our team name (handles common naming differences).
 const TEAM_ALIASES = {
@@ -531,6 +533,7 @@ function applyEvents(events){
 
 function applyLive(){
   if(!DATA) return;
+  renderLiveNow();   // (Overview only) populate the "Live now" section from LIVE.state
   (DATA.matches||[]).forEach(m=>{
     const id="mc_"+m.match_id;
     const lv=document.getElementById("lv_"+id);
@@ -552,6 +555,22 @@ function applyLive(){
       if(st && st.status==='ft' && kick) kick.textContent=`Final: ${st.hs}-${st.as}`;
     }
   });
+}
+
+/* Overview "Live now" section — reuses matchCard() + the existing live poller. */
+function renderLiveNow(){
+  const sec=document.getElementById("liveNowSection");
+  if(!sec) return;   // only present on the Overview tab
+  const ids=(DATA.matches||[])
+    .filter(m=>{ const s=LIVE.state[m.match_id]; return s && s.status==='live'; })
+    .map(m=>m.match_id);
+  const sig=ids.join(",");
+  if(sig===LIVE.nowSig) return;   // set unchanged -> leave DOM (scores update via applyLive loop)
+  LIVE.nowSig=sig;
+  if(!ids.length){ sec.innerHTML=""; return; }   // no live matches -> auto-hide
+  const cards=ids.map(id=>matchCard(DATA.matches.find(m=>m.match_id===id))).join("");
+  sec.innerHTML=`<h3 style="margin:0 0 12px;font-size:15px;display:flex;align-items:center;gap:8px">`+
+                `<span class="live-dot"></span>Live now</h3><div class="cards">${cards}</div>`;
 }
 
 function showLiveNote(){ const n=document.getElementById("liveNote"); if(n) n.innerHTML=`<div class="live-note">Live scores temporarily unavailable — retrying…</div>`; }

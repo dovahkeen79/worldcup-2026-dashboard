@@ -34,7 +34,7 @@
   .btn:disabled{opacity:.6;cursor:progress;}
   .btn.primary{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.5);color:var(--accent);}
 
-  .tabs{display:flex;gap:6px;overflow-x:auto;padding:12px 0 4px;position:sticky;top:57px;
+  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:12px 0 4px;position:sticky;top:57px;
     z-index:15;background:linear-gradient(180deg,var(--bg),transparent);}
   .tab{white-space:nowrap;padding:8px 14px;border-radius:999px;border:1px solid var(--line);
     background:var(--panel);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;}
@@ -152,7 +152,8 @@
   .spinner{width:42px;height:42px;border:4px solid var(--line);border-top-color:var(--accent);
     border-radius:50%;animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
-  @media(max-width:640px){.grid2{grid-template-columns:1fr;}.head-meta{margin-left:0;text-align:left;width:100%;}}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr;}.head-meta{margin-left:0;text-align:left;width:100%;}
+    .tab{padding:6px 10px;font-size:12px;}.tabs{gap:5px;}}
 </style>
 </head>
 <body>

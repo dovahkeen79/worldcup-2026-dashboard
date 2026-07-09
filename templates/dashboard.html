@@ -234,7 +234,7 @@ function stagesPresent(){
   return order.filter(s=>set.has(s));
 }
 function buildTabs(){
-  const tabs=["Overview",...stagesPresent(),"Bracket"];
+  const tabs=["Overview","Stats",...stagesPresent(),"Bracket"];
   document.getElementById("tabs").innerHTML = tabs.map(t=>
     `<div class="tab ${t===activeTab?'active':''}" onclick="setTab('${esc(t)}')">${esc(t)}</div>`).join("");
 }
@@ -259,11 +259,13 @@ function render(){
   const el=document.getElementById("content");
   const hint=document.getElementById("filterHint");
   hint.textContent = filter ? `filtering “${filter}”` : "";
-  // The team filter does nothing on Overview or Bracket, so hide it there.
+  // The team filter does nothing on Overview / Stats / Bracket, so hide it there.
   const toolbar=document.querySelector(".toolbar");
-  if(toolbar) toolbar.style.display = (activeTab==="Overview"||activeTab==="Bracket") ? "none" : "";
+  if(toolbar) toolbar.style.display =
+    (activeTab==="Overview"||activeTab==="Stats"||activeTab==="Bracket") ? "none" : "";
   if(DATA.is_sample) el.innerHTML=`<div class="sample-banner">⚠ SAMPLE DATA — live sources were unavailable.</div>`; else el.innerHTML="";
   if(activeTab==="Overview") el.insertAdjacentHTML("beforeend",renderOverview());
+  else if(activeTab==="Stats") el.insertAdjacentHTML("beforeend",renderStats());
   else if(activeTab==="Bracket") el.insertAdjacentHTML("beforeend",renderBracket());
   else if(activeTab==="Group stage") el.insertAdjacentHTML("beforeend",renderGroupStage());
   else el.insertAdjacentHTML("beforeend",renderStage(activeTab));
@@ -296,6 +298,43 @@ function renderOverview(){
   }
   h+=`<p class="hint">Tip: click any match card to expand form, head-to-head, key players and the prediction rationale. Use the tabs to move between rounds, or the Bracket tab for the knockout tree.</p>`;
   return h;
+}
+
+/* ---------- Stats tab ---------- */
+function renderStats(){
+  const sp=DATA.statspage||{};
+  const t=sp.tournament||{}, tm=sp.teams||{}, scorers=sp.top_scorers||[];
+  const bw=t.biggest_win;
+  let h=`<div class="stat-row">
+    <div class="stat"><div class="n">${t.total_goals||0}</div><div class="l">Total goals</div></div>
+    <div class="stat"><div class="n">${t.goals_per_match||0}</div><div class="l">Goals / match</div></div>
+    <div class="stat"><div class="n">${t.penalty_shootouts||0}</div><div class="l">Penalty shootouts</div></div>
+  </div>`;
+  // Biggest win (own panel — it has teams + flags)
+  h+=`<div class="panel"><div class="fav"><span class="l">Biggest win</span></div>`;
+  h+= bw
+    ? `<div class="fav"><span>${flagInline(bw.home)}${esc(bw.home)} <b>${bw.home_score}–${bw.away_score}</b> ${flagInline(bw.away)}${esc(bw.away)}</span><span class="kv">${esc(bw.stage||"")}</span></div>`
+    : `<div class="na">No data.</div>`;
+  h+=`</div>`;
+  // Top scorers
+  h+=`<div class="panel"><div class="fav"><span class="l">🥇 Top scorers</span><span class="l">Goals</span></div>`;
+  h+= scorers.length
+    ? scorers.map((s,i)=>`<div class="fav"><span>${i+1}. ${flagInline(s.country)}${esc(s.player)}${s.country?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(s.country)}</div>`:""}</span><span class="c">${s.goals}</span></div>`).join("")
+    : `<div class="na">Goalscorer data unavailable.</div>`;
+  h+=`</div>`;
+  // Team tables
+  h+=teamStatPanel("⚽ Most goals scored", tm.most_goals, "goals");
+  h+=teamStatPanel("🛡️ Best defence", tm.best_defence, "conceded");
+  h+=teamStatPanel("🧤 Most clean sheets", tm.clean_sheets, "clean sheets");
+  return h;
+}
+function teamStatPanel(title, rows, unit){
+  rows=rows||[];
+  let h=`<div class="panel"><div class="fav"><span class="l">${title}</span><span class="l">${esc(unit)}</span></div>`;
+  h+= rows.length
+    ? rows.map((r,i)=>`<div class="fav"><span>${i+1}. ${flagInline(r.team)}${esc(r.team)}</span><span class="c">${r.value}</span></div>`).join("")
+    : `<div class="na">No data.</div>`;
+  return h+`</div>`;
 }
 
 /* ---------- A stage of match cards ---------- */

@@ -286,7 +286,8 @@ function renderOverview(){
     <div class="stat"><div class="n">${accN}</div><div class="l">${accL}</div><div class="sub">${accSub}</div></div>
   </div>`;
   if((s.favourites||[]).length){
-    h+=`<div class="panel"><h3>Predicted results — upcoming</h3>`+
+    h+=`<div class="panel">`+
+      `<div class="fav"><span class="l">Upcoming</span><span class="l">Prediction</span></div>`+
       s.favourites.map(f=>`<div class="fav"><span>${flagInline(f.home)}${esc(f.home)} vs ${flagInline(f.away)}${esc(f.away)}${f.kickoff?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(f.kickoff)}</div>`:""}</span><span class="c">${esc(f.pick)} · ${f.confidence}%</span></div>`).join("")+`</div>`;
   }
   if((s.highlights||[]).length){

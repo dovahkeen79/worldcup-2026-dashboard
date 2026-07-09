@@ -174,14 +174,16 @@ def _stats(matches, groups, upcoming):
          "stage": m["group"] or m["stage"]}
         for m in big
     ]
+    # Soonest match first (sort on the UTC timestamp for correct ordering).
+    up_sorted = sorted((m for m in upcoming if m.get("prediction")),
+                       key=lambda m: m.get("kickoff_iso") or m.get("date_iso") or "9999")
     favourites = [
         {"home": m["home"], "away": m["away"],
          "pick": m["prediction"]["prediction"],
          "confidence": m["prediction"]["confidence"],
          "kickoff": m.get("kickoff_london") or m.get("date_london") or ""}
-        for m in upcoming if m.get("prediction")
+        for m in up_sorted
     ]
-    favourites.sort(key=lambda x: x["confidence"], reverse=True)
     return {"highlights": highlights, "favourites": favourites,
             "total_goals": sum((m["home_score"] or 0) + (m["away_score"] or 0)
                                for m in played)}

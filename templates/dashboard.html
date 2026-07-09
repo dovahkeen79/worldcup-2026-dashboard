@@ -77,6 +77,7 @@
   .live-slot{margin-top:6px;}
   .live-slot:empty,.verdict:empty{display:none;}
   .live-line{font-size:12.5px;font-weight:800;color:#fca5a5;display:inline-flex;align-items:center;gap:6px;}
+  .live-pill{display:inline-flex;align-items:center;gap:5px;margin-left:8px;color:#fca5a5;font-weight:800;font-size:11px;vertical-align:middle;}
   .live-dot{width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block;animation:pulse 1.2s infinite;}
   @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
   .verdict{font-size:11.5px;font-weight:700;margin-top:5px;}
@@ -302,7 +303,7 @@ function renderOverview(){
   if((s.favourites||[]).length){
     h+=`<div class="panel">`+
       `<div class="fav"><span class="l">Upcoming</span><span class="l">Prediction</span></div>`+
-      s.favourites.map(f=>`<div class="fav"><span>${flagInline(f.home)}${esc(f.home)} vs ${flagInline(f.away)}${esc(f.away)}${f.kickoff?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(f.kickoff)}</div>`:""}</span><span class="c">${esc(f.pick)} · ${f.confidence}%</span></div>`).join("")+`</div>`;
+      s.favourites.map(f=>`<div class="fav"><span>${flagInline(f.home)}${esc(f.home)} vs ${flagInline(f.away)}${esc(f.away)}<span id="upl_${esc(f.match_id)}"></span>${f.kickoff?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(f.kickoff)}</div>`:""}</span><span class="c">${esc(f.pick)} · ${f.confidence}%</span></div>`).join("")+`</div>`;
   }
   if((s.highlights||[]).length){
     h+=`<div class="panel"><h3>Biggest results so far</h3>`+
@@ -528,8 +529,7 @@ async function refresh(){
 
 /* ==================== LIVE SCORES (free TheSportsDB, client-side) ==================== */
 const LIVE = {
-  base: "https://www.thesportsdb.com/api/v1/json/3/eventsday.php",
-  sport: "Soccer",
+  base: "https://www.thesportsdb.com/api/v1/json/3/lookupevent.php",  // poll each fixture by its event id
   state: {},         // match_id -> {status:'live'|'ft', hs, as, minute}
   timer: null,
   nowSig: "",        // signature of the Overview "Live now" set (rebuild only on change)
@@ -577,7 +577,7 @@ function cachedVerdict(id){ try{ const s=localStorage.getItem("wc_verdict_"+id);
 /* --- adaptive scheduler --- */
 function ourLiveCandidates(){
   const now=Date.now();
-  return (DATA.matches||[]).filter(m=>!m.played && !m.is_tbd && m.kickoff_iso).filter(m=>{
+  return (DATA.matches||[]).filter(m=>!m.played && !m.is_tbd && m.kickoff_iso && m.sdb_event_id).filter(m=>{
     const k=Date.parse(m.kickoff_iso);
     return !isNaN(k) && now>=k-120000 && now<=k+150*60000;   // -2 min to +150 min
   });
@@ -600,18 +600,23 @@ function liveTick(){
 }
 
 async function fetchLive(cands){
-  const dates=[...new Set(cands.map(m=>(m.date_iso||m.kickoff_iso||"").slice(0,10)).filter(Boolean))];
-  if(!dates.length) dates.push(new Date().toISOString().slice(0,10));
   try{
-    let events=[];
-    for(const d of dates){
-      const r=await fetch(`${LIVE.base}?d=${d}&s=${LIVE.sport}`, {cache:"no-store"});
-      if(!r.ok) throw new Error("HTTP "+r.status);
-      const j=await r.json();
-      if(j && j.events) events=events.concat(j.events);
-    }
-    hideLiveNote();
-    applyEvents(events);
+    // Poll each in-window fixture directly by its TheSportsDB event id.
+    const results = await Promise.all(cands.map(m=>
+      fetch(`${LIVE.base}?id=${encodeURIComponent(m.sdb_event_id)}`, {cache:"no-store"})
+        .then(r=> r.ok ? r.json() : null)
+        .then(j=>({m, ev: (j && j.events && j.events[0]) || null}))
+        .catch(()=>({m, ev:null}))
+    ));
+    const anyOk = results.some(r=>r.ev);
+    results.forEach(({m, ev})=>{
+      if(!ev) return;
+      const st = classify(ev);
+      if(st){ LIVE.state[m.match_id]=st; if(st.status==='ft') computeVerdict(m, st); }
+      else { delete LIVE.state[m.match_id]; }   // not started / unknown -> not live
+    });
+    if(anyOk) hideLiveNote(); else showLiveNote();
+    applyLive();
   }catch(e){ showLiveNote(); }
 }
 
@@ -628,30 +633,21 @@ function classify(ev){
   if(minute!=null && hasScore) return {status:'live', hs, as, minute};
   return null;   // not started / unknown -> ignore
 }
-function applyEvents(events){
-  const idx={};
-  (DATA.matches||[]).forEach(m=>{ if(!m.is_tbd) idx[normName(m.home)+"|"+normName(m.away)]=m; });
-  (events||[]).forEach(ev=>{
-    const m=idx[normName(ev.strHomeTeam)+"|"+normName(ev.strAwayTeam)];
-    if(!m) return;
-    const st=classify(ev);
-    if(!st) return;
-    LIVE.state[m.match_id]=st;
-    if(st.status==='ft') computeVerdict(m, st);   // cache verdict on finish
-  });
-  applyLive();
-}
 
 function applyLive(){
   if(!DATA) return;
   renderLiveNow();   // (Overview only) populate the "Live now" section from LIVE.state
   (DATA.matches||[]).forEach(m=>{
+    const st=LIVE.state[m.match_id];
+    // Overview "Upcoming" list: show a "playing now" indicator while live
+    const upl=document.getElementById("upl_"+m.match_id);
+    if(upl) upl.innerHTML = (st && st.status==='live')
+      ? `<span class="live-pill"><span class="live-dot"></span>LIVE${st.minute!=null?` ${st.minute}'`:""}</span>` : "";
     const id="mc_"+m.match_id;
     const lv=document.getElementById("lv_"+id);
     if(!lv) return;                                // card not in current view
     const kick=document.getElementById("kick_"+id);
     const vd=document.getElementById("vd_"+id);
-    const st=LIVE.state[m.match_id];
     if(st && st.status==='live'){
       const min=st.minute!=null?` · ${st.minute}'`:"";
       lv.innerHTML=`<span class="live-line"><span class="live-dot"></span>LIVE ${st.hs}-${st.as}${min}</span>`;

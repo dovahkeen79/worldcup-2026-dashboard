@@ -17,6 +17,7 @@ from datetime import datetime
 from agents import h2h as h2h_mod
 from agents import predictions_log as plog
 from agents.goalscorers import fetch_top_scorers
+from agents.livescores import attach_event_ids
 from agents.a2_form_analyst import FormAnalyst
 from agents.a4_squad_reporter import SquadReporter
 from agents.a5_match_analyst import MatchAnalyst
@@ -64,6 +65,9 @@ def build_and_save():
     form = _build_form(teams_in_play, played)
     squads = _build_squads(teams_all)   # all teams — still a single squads-page fetch
     _predict(upcoming, form, squads)
+
+    # Resolve TheSportsDB event ids so the dashboard can poll live scores.
+    attach_event_ids(upcoming)
 
     # Attach "form going in" to every finished match, computed from results we
     # already have (no extra scraping) so their detail panels are worth opening.
@@ -181,7 +185,7 @@ def _stats(matches, groups, upcoming):
     up_sorted = sorted((m for m in upcoming if m.get("prediction")),
                        key=lambda m: m.get("kickoff_iso") or m.get("date_iso") or "9999")
     favourites = [
-        {"home": m["home"], "away": m["away"],
+        {"match_id": m["match_id"], "home": m["home"], "away": m["away"],
          "pick": m["prediction"]["prediction"],
          "confidence": m["prediction"]["confidence"],
          "kickoff": m.get("kickoff_london") or m.get("date_london") or ""}

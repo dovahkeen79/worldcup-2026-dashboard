@@ -27,6 +27,7 @@ from core.http import fetch_soup
 from config import WORLD_CUP_2026_SQUADS_WIKI
 from core.logger import get_logger, setup_logging
 from core.storage import save_json
+from core.timeutil import london_now
 
 log = get_logger("build_data")
 
@@ -74,7 +75,8 @@ def build_and_save():
     _attach_finished_form(matches, played)
 
     # ---- Forward-only prediction log: record new, resolve finished --------- #
-    now_iso = datetime.now().isoformat(timespec="seconds")
+    now = london_now()
+    now_iso = now.isoformat(timespec="seconds")
     pred_log = plog.load_log(PREDICTIONS_LOG_PATH)
     plog.record_predictions(pred_log, upcoming, now_iso)
     plog.resolve(pred_log, matches, now_iso)
@@ -95,8 +97,8 @@ def build_and_save():
              accuracy["correct"], accuracy["resolved"], accuracy["pct"])
 
     payload = {
-        "generated_at": datetime.now().isoformat(timespec="seconds"),
-        "generated_label": datetime.now().strftime("%d %b %Y, %H:%M"),
+        "generated_at": now.isoformat(timespec="seconds"),
+        "generated_label": now.strftime("%d %b %Y, %H:%M %Z"),
         "source": "wikipedia",
         "is_sample": False,
         "stages_order": tour["stages_order"],
@@ -246,8 +248,9 @@ def _statspage(matches):
 
 
 def _empty_payload():
-    return {"generated_at": datetime.now().isoformat(timespec="seconds"),
-            "generated_label": datetime.now().strftime("%d %b %Y, %H:%M"),
+    now = london_now()
+    return {"generated_at": now.isoformat(timespec="seconds"),
+            "generated_label": now.strftime("%d %b %Y, %H:%M %Z"),
             "source": "unavailable", "is_sample": False, "stages_order": [],
             "current_stage": None,
             "groups": [], "matches": [], "teams": {},

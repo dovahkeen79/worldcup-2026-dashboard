@@ -23,6 +23,12 @@ _TIME_RE = re.compile(
 )
 
 
+def london_now():
+    """Current time in Europe/London (works regardless of the server's tz)."""
+    utc = datetime.now(timezone.utc)
+    return utc.astimezone(_LONDON) if _LONDON else utc
+
+
 def to_london(date_text, time_text):
     """Return (london_datetime, iso_utc_string) or (None, None) if unparseable."""
     date_m = _ISO_RE.search(date_text or "")

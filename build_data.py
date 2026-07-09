@@ -96,6 +96,7 @@ def build_and_save():
         "source": "wikipedia",
         "is_sample": False,
         "stages_order": tour["stages_order"],
+        "current_stage": _current_stage(matches, tour["stages_order"]),
         "groups": tour["groups"],
         "matches": matches,
         "teams": {t: {"form": form.get(t), "squad": squads.get(t)} for t in teams_all},
@@ -191,6 +192,15 @@ def _stats(matches, groups, upcoming):
                                for m in played)}
 
 
+def _current_stage(matches, stages_order):
+    """Earliest stage (in tournament order) that still has an unplayed match."""
+    for st in stages_order:
+        stage_matches = [m for m in matches if m["stage"] == st]
+        if stage_matches and any(not m["played"] for m in stage_matches):
+            return st
+    return None
+
+
 def _statspage(matches):
     """Top scorers (one fetch) + team & tournament stats (from existing data)."""
     played = [m for m in matches if m["played"] and not m["is_tbd"]
@@ -235,6 +245,7 @@ def _empty_payload():
     return {"generated_at": datetime.now().isoformat(timespec="seconds"),
             "generated_label": datetime.now().strftime("%d %b %Y, %H:%M"),
             "source": "unavailable", "is_sample": False, "stages_order": [],
+            "current_stage": None,
             "groups": [], "matches": [], "teams": {},
             "accuracy": {"resolved": 0, "correct": 0, "pct": 0},
             "stats": {}, "statspage": {}, "counts": {}}

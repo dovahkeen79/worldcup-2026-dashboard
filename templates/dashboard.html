@@ -154,7 +154,13 @@
     border-radius:50%;animation:spin 1s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   @media(max-width:640px){.grid2{grid-template-columns:1fr;}.head-meta{margin-left:0;text-align:left;width:100%;}
-    .tab{padding:6px 10px;font-size:12px;}.tabs{gap:5px;}}
+    .tab{padding:6px 10px;font-size:12px;}.tabs{gap:5px;}
+    /* compact summary tiles on mobile so Upcoming rises up the page */
+    .stat-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px;}
+    .stat{padding:9px 11px;border-radius:10px;}
+    .stat .n{font-size:20px;}
+    .stat .l{font-size:10px;letter-spacing:.03em;}
+    .stat .sub{font-size:9px;margin-top:3px;line-height:1.25;}}
 </style>
 </head>
 <body>

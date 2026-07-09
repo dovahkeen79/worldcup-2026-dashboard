@@ -162,7 +162,8 @@
     .stat{padding:6px 9px;border-radius:8px;}
     .stat .n{font-size:16px;line-height:1.1;}
     .stat .l{font-size:8.5px;letter-spacing:.03em;}
-    .stat .sub{font-size:8px;margin-top:2px;line-height:1.2;}}
+    .stat .sub{font-size:8px;margin-top:2px;line-height:1.2;}
+    .stat.acc{grid-column:1 / -1;}}   /* accuracy tile fills the last-row gap */
 </style>
 </head>
 <body>
@@ -296,7 +297,7 @@ function renderOverview(){
     <div class="stat"><div class="n">${c.played||0}</div><div class="l">Played</div></div>
     <div class="stat"><div class="n">${c.upcoming||0}</div><div class="l">Upcoming</div></div>
     <div class="stat"><div class="n">${s.total_goals||0}</div><div class="l">Goals scored</div></div>
-    <div class="stat"><div class="n">${accN}</div><div class="l">${accL}</div><div class="sub">${accSub}</div></div>
+    <div class="stat acc"><div class="n">${accN}</div><div class="l">${accL}</div><div class="sub">${accSub}</div></div>
   </div>`;
   if((s.favourites||[]).length){
     h+=`<div class="panel">`+

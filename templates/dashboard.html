@@ -126,6 +126,7 @@
   .stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;}
   .stat .n{font-size:26px;font-weight:800;}
   .stat .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
+  .stat .sub{color:var(--muted);font-size:10.5px;margin-top:5px;line-height:1.35;opacity:.85;}
   .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
     border-radius:14px;padding:14px 16px;margin-bottom:14px;}
   .panel h3{margin:0 0 10px;font-size:15px;}
@@ -258,9 +259,9 @@ function render(){
   const el=document.getElementById("content");
   const hint=document.getElementById("filterHint");
   hint.textContent = filter ? `filtering “${filter}”` : "";
-  // The team filter does nothing on Overview, so hide it there only.
+  // The team filter does nothing on Overview or Bracket, so hide it there.
   const toolbar=document.querySelector(".toolbar");
-  if(toolbar) toolbar.style.display = (activeTab==="Overview") ? "none" : "";
+  if(toolbar) toolbar.style.display = (activeTab==="Overview"||activeTab==="Bracket") ? "none" : "";
   if(DATA.is_sample) el.innerHTML=`<div class="sample-banner">⚠ SAMPLE DATA — live sources were unavailable.</div>`; else el.innerHTML="";
   if(activeTab==="Overview") el.insertAdjacentHTML("beforeend",renderOverview());
   else if(activeTab==="Bracket") el.insertAdjacentHTML("beforeend",renderBracket());
@@ -274,17 +275,19 @@ function renderOverview(){
   const c=DATA.counts||{}, s=DATA.stats||{}, acc=DATA.accuracy||{resolved:0,correct:0,pct:0};
   const accN = acc.resolved ? `${acc.correct}/${acc.resolved}` : "—";
   const accL = acc.resolved ? `Model accuracy · ${acc.pct}%` : "Model accuracy";
+  const accSub = acc.resolved ? "How often our match predictions were correct"
+                              : "No predictions resolved yet";
   LIVE.nowSig="";   // fresh Overview DOM -> force the "Live now" section to repopulate
   let h=`<div id="liveNowSection"></div><div class="stat-row">
     <div class="stat"><div class="n">${c.matches||0}</div><div class="l">Matches</div></div>
     <div class="stat"><div class="n">${c.played||0}</div><div class="l">Played</div></div>
     <div class="stat"><div class="n">${c.upcoming||0}</div><div class="l">Upcoming</div></div>
     <div class="stat"><div class="n">${s.total_goals||0}</div><div class="l">Goals scored</div></div>
-    <div class="stat"><div class="n">${accN}</div><div class="l">${accL}</div></div>
+    <div class="stat"><div class="n">${accN}</div><div class="l">${accL}</div><div class="sub">${accSub}</div></div>
   </div>`;
   if((s.favourites||[]).length){
     h+=`<div class="panel"><h3>Predicted results — upcoming</h3>`+
-      s.favourites.map(f=>`<div class="fav"><span>${flagInline(f.home)}${esc(f.home)} vs ${flagInline(f.away)}${esc(f.away)}</span><span class="c">${esc(f.pick)} · ${f.confidence}%</span></div>`).join("")+`</div>`;
+      s.favourites.map(f=>`<div class="fav"><span>${flagInline(f.home)}${esc(f.home)} vs ${flagInline(f.away)}${esc(f.away)}${f.kickoff?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(f.kickoff)}</div>`:""}</span><span class="c">${esc(f.pick)} · ${f.confidence}%</span></div>`).join("")+`</div>`;
   }
   if((s.highlights||[]).length){
     h+=`<div class="panel"><h3>Biggest results so far</h3>`+

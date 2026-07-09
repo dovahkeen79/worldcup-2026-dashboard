@@ -177,7 +177,8 @@ def _stats(matches, groups, upcoming):
     favourites = [
         {"home": m["home"], "away": m["away"],
          "pick": m["prediction"]["prediction"],
-         "confidence": m["prediction"]["confidence"]}
+         "confidence": m["prediction"]["confidence"],
+         "kickoff": m.get("kickoff_london") or m.get("date_london") or ""}
         for m in upcoming if m.get("prediction")
     ]
     favourites.sort(key=lambda x: x["confidence"], reverse=True)

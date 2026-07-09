@@ -22,7 +22,17 @@ from core.logger import get_logger
 
 log = get_logger("goalscorers")
 
-_NAT_SUFFIX = re.compile(r"\s+national football team$", re.IGNORECASE)
+# Flag alts vary: "Argentina national football team", "Canada men's national
+# soccer team", "South Africa  national  soccer  team" (note double spaces).
+_NAT_SUFFIX = re.compile(
+    r"\s+(?:men's\s+|women's\s+)?national\s+(?:football|soccer)\s+team$",
+    re.IGNORECASE,
+)
+
+
+def _clean_country(alt):
+    s = re.sub(r"\s+", " ", alt or "").strip()   # collapse the double spaces first
+    return _NAT_SUFFIX.sub("", s).strip()
 
 
 def fetch_top_scorers(limit=20):
@@ -62,9 +72,7 @@ def fetch_top_scorers(limit=20):
 
 def _parse_li(li):
     img = li.find("img")
-    country = ""
-    if img and img.get("alt"):
-        country = _NAT_SUFFIX.sub("", img.get("alt")).strip()
+    country = _clean_country(img.get("alt")) if (img and img.get("alt")) else ""
     player = ""
     for a in li.find_all("a"):
         txt = a.get_text(strip=True)

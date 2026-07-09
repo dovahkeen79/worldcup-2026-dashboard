@@ -68,7 +68,8 @@
   .pill.tbd{background:rgba(148,163,184,.14);color:var(--muted);border-color:var(--line);}
   .kick{color:var(--muted);font-size:11.5px;margin-top:3px;}
   .meta-line{color:var(--muted);font-size:11.5px;padding:0 16px 8px;margin-top:-6px;cursor:pointer;}
-  .chev{color:var(--muted);font-size:11px;}
+  .chev{color:var(--muted);font-size:11px;display:inline-block;transition:transform .15s;}
+  .card.open > .row .chev{transform:rotate(180deg);}
   /* ---- live enrichment (added on top; slots are invisible until filled) ---- */
   .pill.live{background:rgba(239,68,68,.16);color:#fca5a5;border-color:rgba(239,68,68,.5);}
   .live-slot{margin-top:6px;}
@@ -311,31 +312,35 @@ function renderStats(){
     <div class="stat"><div class="n">${t.goals_per_match||0}</div><div class="l">Goals / match</div></div>
     <div class="stat"><div class="n">${t.penalty_shootouts||0}</div><div class="l">Penalty shootouts</div></div>
   </div>`;
-  // Biggest win (own panel — it has teams + flags)
+  // Biggest win — always visible (part of the tournament overview)
   h+=`<div class="panel"><div class="fav"><span class="l">Biggest win</span></div>`;
   h+= bw
     ? `<div class="fav"><span>${flagInline(bw.home)}${esc(bw.home)} <b>${bw.home_score}–${bw.away_score}</b> ${flagInline(bw.away)}${esc(bw.away)}</span><span class="kv">${esc(bw.stage||"")}</span></div>`
     : `<div class="na">No data.</div>`;
   h+=`</div>`;
-  // Top scorers
-  h+=`<div class="panel"><div class="fav"><span class="l">🥇 Top scorers</span><span class="l">Goals</span></div>`;
-  h+= scorers.length
+
+  // Collapsible categories (reuse the match-card expand/collapse)
+  const note=`<div class="kv" style="margin-bottom:8px">Ranked by goals, then assists — official Golden Boot order.</div>`;
+  const scorersBody = note + (scorers.length
     ? scorers.map((s,i)=>`<div class="fav"><span>${i+1}. ${flagInline(s.country)}${esc(s.player)}${s.country?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(s.country)}</div>`:""}</span><span class="c">${s.goals}</span></div>`).join("")
-    : `<div class="na">Goalscorer data unavailable.</div>`;
-  h+=`</div>`;
-  // Team tables
-  h+=teamStatPanel("⚽ Most goals scored", tm.most_goals, "goals");
-  h+=teamStatPanel("🛡️ Best defence", tm.best_defence, "conceded");
-  h+=teamStatPanel("🧤 Most clean sheets", tm.clean_sheets, "clean sheets");
+    : `<div class="na">Goalscorer data unavailable.</div>`);
+  h+=statCard("stat_scorers","🥇 Top scorers", scorersBody, true);
+  h+=statCard("stat_goals","⚽ Most goals scored", teamRows(tm.most_goals), false);
+  h+=statCard("stat_def","🛡️ Best defence (fewest conceded)", teamRows(tm.best_defence), false);
+  h+=statCard("stat_cs","🧤 Most clean sheets", teamRows(tm.clean_sheets), false);
   return h;
 }
-function teamStatPanel(title, rows, unit){
+function teamRows(rows){
   rows=rows||[];
-  let h=`<div class="panel"><div class="fav"><span class="l">${title}</span><span class="l">${esc(unit)}</span></div>`;
-  h+= rows.length
+  return rows.length
     ? rows.map((r,i)=>`<div class="fav"><span>${i+1}. ${flagInline(r.team)}${esc(r.team)}</span><span class="c">${r.value}</span></div>`).join("")
     : `<div class="na">No data.</div>`;
-  return h+`</div>`;
+}
+function statCard(id, title, body, open){
+  return `<div class="card ${open?"open":""}" id="${id}">`+
+    `<div class="row" style="grid-template-columns:1fr auto;padding:14px 16px" onclick="toggle('${id}')">`+
+      `<span class="l" style="font-size:13px">${title}</span><span class="chev">▾</span></div>`+
+    `<div class="detail">${body}</div></div>`;
 }
 
 /* ---------- A stage of match cards ---------- */

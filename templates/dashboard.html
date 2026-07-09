@@ -238,7 +238,7 @@ async function boot(){
 function renderMeta(){
   const c=DATA.counts||{};
   document.getElementById("headMeta").innerHTML =
-    `Updated <b>${esc(DATA.generated_label||"—")}</b> · ${c.matches||0} matches · ${c.played||0} played · ${c.upcoming||0} upcoming`;
+    `Data updated <b>${esc(DATA.generated_label||"—")}</b> · ${c.matches||0} matches · ${c.played||0} played · ${c.upcoming||0} upcoming`;
 }
 function stagesPresent(){
   const order=DATA.stages_order||[];
@@ -585,7 +585,8 @@ function ourLiveCandidates(){
 function nextInterval(){
   const live=Object.values(LIVE.state).filter(s=>s.status==='live');
   if(!live.length) return 60000;                              // in window, waiting for kickoff
-  if(live.some(s=>s.minute!=null && s.minute>=85)) return 15000;  // stoppage time
+  const hot=live.some(s=>["2nd half","Extra time","Penalties"].includes(s.phase));
+  if(hot) return 15000;                                       // business end -> poll faster
   return live.length>=3 ? 30000 : 20000;                     // 3+ -> 30s, 1-2 -> 20s
 }
 function startLive(){ if(LIVE.timer) clearTimeout(LIVE.timer); liveTick(); }
@@ -620,17 +621,27 @@ async function fetchLive(cands){
   }catch(e){ showLiveNote(); }
 }
 
+// The free TheSportsDB tier gives the period/status (1H, HT, 2H, ET…) but NOT a
+// true elapsed minute, so we show an honest phase label rather than a fake "1'".
+function livePhase(ev){
+  const s=(ev.strStatus||"").trim().toUpperCase();
+  const MAP={"1H":"1st half","H1":"1st half","2H":"2nd half","H2":"2nd half","HT":"Half-time",
+             "ET":"Extra time","ET1":"Extra time","ET2":"Extra time","BT":"Extra time",
+             "P":"Penalties","SUSP":"Suspended","INT":"Interrupted","LIVE":"Live"};
+  if(MAP[s]) return MAP[s];
+  // If a genuine minute is ever provided in strProgress, show it (period 1/2 -> half).
+  const m=(ev.strProgress||"").trim().match(/^(\d{1,3})'?$/);
+  if(m){ const n=parseInt(m[1]); if(n===1)return "1st half"; if(n===2)return "2nd half"; if(n>=3&&n<=130)return n+"'"; }
+  return "Live";
+}
 function classify(ev){
   const hs=parseInt(ev.intHomeScore), as=parseInt(ev.intAwayScore);
   const hasScore=!isNaN(hs)&&!isNaN(as);
-  const status=(ev.strStatus||"").trim();
-  const up=status.toUpperCase();
+  const up=(ev.strStatus||"").trim().toUpperCase();
   const FIN=["FT","AET","PEN","AP","MATCH FINISHED","AFTER EXTRA TIME","AFTER PENALTIES"];
   const NS=["NS","NOT STARTED","","POSTPONED","TBD","CANC","CANCELLED"];
-  if(FIN.includes(up) && hasScore) return {status:'ft', hs, as, minute:null};
-  const minute=(function(){ const m=((ev.strProgress||"")+" "+status).match(/(\d{1,3})/); return m?parseInt(m[1]):null; })();
-  if(!NS.includes(up) && hasScore) return {status:'live', hs, as, minute};
-  if(minute!=null && hasScore) return {status:'live', hs, as, minute};
+  if(FIN.includes(up) && hasScore) return {status:'ft', hs, as, phase:"Full-time"};
+  if(!NS.includes(up) && hasScore) return {status:'live', hs, as, phase:livePhase(ev)};
   return null;   // not started / unknown -> ignore
 }
 
@@ -639,18 +650,19 @@ function applyLive(){
   renderLiveNow();   // (Overview only) populate the "Live now" section from LIVE.state
   (DATA.matches||[]).forEach(m=>{
     const st=LIVE.state[m.match_id];
-    // Overview "Upcoming" list: show a "playing now" indicator while live
+    // Overview "Upcoming" list: drop a match once it's live or finished
+    // (live ones appear in "Live now"; finished ones move to their played state).
     const upl=document.getElementById("upl_"+m.match_id);
-    if(upl) upl.innerHTML = (st && st.status==='live')
-      ? `<span class="live-pill"><span class="live-dot"></span>LIVE${st.minute!=null?` ${st.minute}'`:""}</span>` : "";
+    if(upl){ const row=upl.closest(".fav");
+      if(row) row.style.display = (st && (st.status==='live'||st.status==='ft')) ? "none" : ""; }
     const id="mc_"+m.match_id;
     const lv=document.getElementById("lv_"+id);
     if(!lv) return;                                // card not in current view
     const kick=document.getElementById("kick_"+id);
     const vd=document.getElementById("vd_"+id);
     if(st && st.status==='live'){
-      const min=st.minute!=null?` · ${st.minute}'`:"";
-      lv.innerHTML=`<span class="live-line"><span class="live-dot"></span>LIVE ${st.hs}-${st.as}${min}</span>`;
+      const ph=st.phase?` · ${st.phase}`:"";
+      lv.innerHTML=`<span class="live-line"><span class="live-dot"></span>LIVE ${st.hs}-${st.as}${ph}</span>`;
       if(kick) kick.textContent="LIVE NOW";
     } else {
       lv.innerHTML="";

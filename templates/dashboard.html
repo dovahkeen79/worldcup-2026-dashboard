@@ -330,7 +330,7 @@ function renderStats(){
   const scorersBody = note + (scorers.length
     ? scorers.map((s,i)=>`<div class="fav"><span>${i+1}. ${flagInline(s.country)}${esc(s.player)}${s.country?`<div class="kv" style="font-size:11px;margin-top:2px">${esc(s.country)}</div>`:""}</span><span class="c">${s.goals}</span></div>`).join("")
     : `<div class="na">Goalscorer data unavailable.</div>`);
-  h+=statCard("stat_scorers","🥇 Top scorers", scorersBody, true);
+  h+=statCard("stat_scorers","🥇 Top scorers", scorersBody, false);
   h+=statCard("stat_goals","⚽ Most goals scored", teamRows(tm.most_goals), false);
   h+=statCard("stat_def","🛡️ Best defence (fewest conceded)", teamRows(tm.best_defence), false);
   h+=statCard("stat_cs","🧤 Most clean sheets", teamRows(tm.clean_sheets), false);

@@ -9,7 +9,14 @@
     "predicted_side": "home",
     "confidence": 47,
     "made_at": "2026-07-08T13:22:36",
-    "resolved": false
+    "resolved": true,
+    "actual_home": 2,
+    "actual_away": 0,
+    "actual_side": "home",
+    "actual_winner": "France",
+    "pens": null,
+    "correct": true,
+    "resolved_at": "2026-07-09T23:42:29+01:00"
   },
   {
     "key": "Spain|Belgium|2026-07-10",

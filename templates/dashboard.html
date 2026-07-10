@@ -497,13 +497,39 @@ function squadBlock(sq){
 
 /* ---------- Bracket ---------- */
 function renderBracket(){
-  const rounds=["Round of 32","Round of 16","Quarter-finals","Semi-finals","Final"];
-  const present=rounds.filter(r=>(DATA.matches||[]).some(m=>m.stage===r));
+  const roundNames=["Round of 32","Round of 16","Quarter-finals","Semi-finals","Final"];
+  const present=roundNames.filter(r=>(DATA.matches||[]).some(m=>m.stage===r));
   if(!present.length) return `<p class="na">No knockout matches yet.</p>`;
-  return `<div class="bracket">`+present.map(r=>{
-    const ms=(DATA.matches||[]).filter(m=>m.stage===r);
-    return `<div class="bcol"><h4>${esc(r)}</h4><div class="bcol-cards">`+ms.map(bMatch).join("")+`</div></div>`;
-  }).join("")+`</div>`;
+  // Reorder each round so it reads as a proper tree: every match's two feeder
+  // matches (the ones its two teams won) sit as an adjacent pair to its left.
+  const byRound = bracketOrder(present.map(r=>(DATA.matches||[]).filter(m=>m.stage===r)));
+  return `<div class="bracket">`+present.map((r,i)=>
+    `<div class="bcol"><h4>${esc(r)}</h4><div class="bcol-cards">`+byRound[i].map(bMatch).join("")+`</div></div>`
+  ).join("")+`</div>`;
+}
+// Order rounds by BRACKET FLOW (not match number): cascade down from the
+// smallest present round; for each next-round match, place its two feeders
+// (previous-round matches whose winner == this match's home/away team) as a
+// pair. Uses actual advancement; degrades to natural order for unknown links.
+function bracketOrder(byRound){
+  const ordered = byRound.map(a=>a.slice());
+  for(let i=byRound.length-2; i>=0; i--){
+    const pool=byRound[i].slice(), used=new Set(), result=[];
+    const take=(team)=>{
+      if(!team || isPlaceholder(team)) return null;
+      const m=pool.find(x=>!used.has(x) && x.winner===team);
+      if(m) used.add(m);
+      return m;
+    };
+    ordered[i+1].forEach(nm=>{
+      const fh=take(nm.home), fa=take(nm.away);
+      if(fh) result.push(fh);
+      if(fa) result.push(fa);
+    });
+    pool.forEach(m=>{ if(!used.has(m)) result.push(m); });   // leftovers (unlinked/tbd)
+    ordered[i]=result;
+  }
+  return ordered;
 }
 // "Winner Match 98" / "Runners-up Group A" etc. are placeholders, not real teams.
 function isPlaceholder(name){ return /\b(winner|winners|loser|losers|runner|runners|tbd|match|group|place)\b|\d/i.test(name||""); }

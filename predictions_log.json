@@ -28,7 +28,14 @@
     "predicted_side": "home",
     "confidence": 38,
     "made_at": "2026-07-08T13:22:36",
-    "resolved": false
+    "resolved": true,
+    "actual_home": 2,
+    "actual_away": 1,
+    "actual_side": "home",
+    "actual_winner": "Spain",
+    "pens": null,
+    "correct": true,
+    "resolved_at": "2026-07-10T23:02:31+01:00"
   },
   {
     "key": "Norway|England|2026-07-11",
@@ -52,6 +59,18 @@
     "predicted_side": "home",
     "confidence": 53,
     "made_at": "2026-07-08T13:22:36",
+    "resolved": false
+  },
+  {
+    "key": "France|Spain|2026-07-14",
+    "home": "France",
+    "away": "Spain",
+    "date_iso": "2026-07-14",
+    "stage": "Semi-finals",
+    "predicted_team": "Spain",
+    "predicted_side": "away",
+    "confidence": 36,
+    "made_at": "2026-07-10T23:02:31+01:00",
     "resolved": false
   }
 ]

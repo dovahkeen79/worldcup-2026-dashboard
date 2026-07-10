@@ -139,14 +139,18 @@
   .fav .c{color:var(--accent);font-weight:800;}
 
   /* Bracket */
-  .bracket{display:flex;gap:22px;overflow-x:auto;padding:6px 2px 16px;}
-  .bcol{display:flex;flex-direction:column;justify-content:space-around;gap:12px;min-width:200px;}
-  .bcol h4{margin:0 0 2px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);text-align:center;}
+  .bracket{display:flex;gap:22px;overflow-x:auto;padding:6px 2px 16px;align-items:stretch;}
+  .bcol{display:flex;flex-direction:column;min-width:200px;}
+  .bcol h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);text-align:center;flex:none;}
+  /* cards are distributed over the FULL (equal) column height, header excluded,
+     so each round's card sits halfway between its two feeder matches */
+  .bcol-cards{flex:1;display:flex;flex-direction:column;justify-content:space-around;}
   .bmatch{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12.5px;}
-  .bmatch .t{display:flex;justify-content:space-between;gap:8px;padding:2px 0;}
+  .bmatch .t{display:flex;justify-content:space-between;gap:8px;padding:2px 0;white-space:nowrap;}
+  .bmatch .t>span:first-child{overflow:hidden;text-overflow:ellipsis;min-width:0;}
   .bmatch .t.win{color:var(--ink);font-weight:800;}
   .bmatch .t.lose{color:var(--muted);}
-  .bmatch .tbd{color:var(--muted);font-style:italic;}
+  .bmatch .t.tbd{color:var(--muted);font-style:italic;}
 
   .sample-banner{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.5);color:#fcd34d;
     padding:10px 14px;border-radius:10px;font-weight:600;text-align:center;margin:14px 0;font-size:13.5px;}
@@ -495,22 +499,25 @@ function renderBracket(){
   if(!present.length) return `<p class="na">No knockout matches yet.</p>`;
   return `<div class="bracket">`+present.map(r=>{
     const ms=(DATA.matches||[]).filter(m=>m.stage===r);
-    return `<div class="bcol"><h4>${esc(r)}</h4>`+ms.map(bMatch).join("")+`</div>`;
+    return `<div class="bcol"><h4>${esc(r)}</h4><div class="bcol-cards">`+ms.map(bMatch).join("")+`</div></div>`;
   }).join("")+`</div>`;
 }
+// "Winner Match 98" / "Runners-up Group A" etc. are placeholders, not real teams.
+function isPlaceholder(name){ return /\b(winner|winners|loser|losers|runner|runners|tbd|match|group|place)\b|\d/i.test(name||""); }
+function bTeam(name, win, played, score){
+  if(isPlaceholder(name))
+    return `<div class="t tbd"><span>${esc(name)}</span><span></span></div>`;
+  const cls = win ? "win" : (played ? "lose" : "");   // confirmed team: always show its flag
+  return `<div class="t ${cls}"><span>${flagInline(name)}${esc(name)}</span><span>${score}</span></div>`;
+}
 function bMatch(m){
-  if(m.is_tbd) return `<div class="bmatch"><div class="t tbd">${esc(m.home)}</div><div class="t tbd">${esc(m.away)}</div></div>`;
-  const hs=m.home_score,as=m.away_score,played=m.played;
-  // Winner = who advanced (penalty/ET winner on a draw), not just higher score.
-  const hw=played&&(m.winner?m.winner===m.home:hs>as);
-  const aw=played&&(m.winner?m.winner===m.away:as>hs);
+  const played=m.played;
+  const hw=played&&(m.winner?m.winner===m.home:m.home_score>m.away_score);
+  const aw=played&&(m.winner?m.winner===m.away:m.away_score>m.home_score);
   const pH=m.pens?` (${m.pens.home})`:"", pA=m.pens?` (${m.pens.away})`:"";
-  const sc=played?` <b>${hs}${pH}</b>`:"";
-  const scA=played?` <b>${as}${pA}</b>`:"";
-  return `<div class="bmatch">
-    <div class="t ${hw?'win':(played?'lose':'')}"><span>${flagInline(m.home)}${esc(m.home)}</span><span>${sc}</span></div>
-    <div class="t ${aw?'win':(played?'lose':'')}"><span>${flagInline(m.away)}${esc(m.away)}</span><span>${scA}</span></div>
-  </div>`;
+  const sc=played?`<b>${m.home_score}${pH}</b>`:"";
+  const scA=played?`<b>${m.away_score}${pA}</b>`:"";
+  return `<div class="bmatch">${bTeam(m.home,hw,played,sc)}${bTeam(m.away,aw,played,scA)}</div>`;
 }
 
 /* ---------- interactions ---------- */

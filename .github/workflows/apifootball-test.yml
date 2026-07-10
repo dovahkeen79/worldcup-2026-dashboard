@@ -1,0 +1,22 @@
+name: API-Football coverage test
+
+# Manual only — confirms whether the free plan returns 2026 World Cup lineups.
+# Uses the API_FOOTBALL_KEY secret; never prints it. Does not deploy anything.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run coverage test
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python scripts/apifootball_test.py

@@ -4,14 +4,17 @@ Capture-once store for finished-match highlight videos.
 Goals + venue/attendance/referee are parsed cheaply from Wikipedia on every
 build (they're on the match object), so they don't need persisting. The one
 EXPENSIVE bit is the TheSportsDB highlight video (`strVideo`), which requires a
-per-match lookup — so we resolve it ONCE per finished match and persist it in
-`match_events.json` (committed back by the Action), never re-fetching.
+per-match lookup — so we resolve it and persist it in `match_events.json`
+(committed back by the Action).
 
-A match is only marked `video_checked` when TheSportsDB actually ANSWERED
-(whether or not it had a video). If the lookup fails (rate-limit / network),
-the match is left unchecked so a later build retries it — we never poison the
-store with a false `null`. Requests are throttled to stay under the free-tier
-rate limit.
+Store entry per match:
+  * a found video is stored as `{"video": <url>}` and never looked up again;
+  * a not-yet-available video is stored as `{"video": null, "tries": N}` and
+    RE-CHECKED on later builds (self-heals when TheSportsDB uploads it), until
+    it's found or we give up after MAX_TRIES attempts.
+A lookup that FAILS (rate-limit / network) is left unrecorded so a later build
+retries it — we never poison the store with a false `null`. Requests are
+throttled to stay under the free-tier rate limit.
 """
 
 import json
@@ -24,7 +27,8 @@ from core.logger import get_logger
 log = get_logger("match_events")
 
 SDB = "https://www.thesportsdb.com/api/v1/json/3"
-CAP_PER_BUILD = 12       # resolve at most this many new videos per build (polite backfill)
+CAP_PER_BUILD = 12       # resolve/re-check at most this many matches per build
+MAX_TRIES = 40           # give up re-checking a missing video after this many builds
 _MIN_INTERVAL = 2.0      # seconds between SDB calls (free tier rate-limits hard)
 
 # The few WC2026 teams whose TheSportsDB event name differs from the Wikipedia
@@ -88,29 +92,45 @@ def _find_video(home, away):
     return None
 
 
-def capture(events, matches):
-    """Resolve up to CAP_PER_BUILD new highlight videos; persist permanently.
+def _needs_lookup(rec):
+    """A match still needs a (re)lookup unless we have its video or gave up."""
+    if rec is None:
+        return True
+    if rec.get("video"):
+        return False
+    return rec.get("tries", 0) < MAX_TRIES
 
-    Failed lookups are left unrecorded so a later build retries them.
+
+def capture(events, matches):
+    """Resolve / re-check up to CAP_PER_BUILD highlight videos; persist results.
+
+    A found video is stored permanently; a missing one is re-checked on future
+    builds (self-heals) until found or MAX_TRIES is reached. Failed lookups
+    (rate-limit / network) are left unrecorded so a later build retries them.
     """
     finished = [m for m in matches if m.get("played") and not m.get("is_tbd")]
-    checked = failed = 0
+    checked = failed = found = 0
     for m in finished:
         if checked >= CAP_PER_BUILD:
             break
         key = match_key(m["home"], m["away"], m.get("date_iso"))
-        if events.get(key, {}).get("video_checked"):
+        rec = events.get(key)
+        if not _needs_lookup(rec):
             continue
         try:
             video = _find_video(m["home"], m["away"])
         except _LookupFailed:
             failed += 1
             continue   # retry on a future build
-        events[key] = {"video": video, "video_checked": True}
+        if video:
+            events[key] = {"video": video}
+            found += 1
+        else:
+            events[key] = {"video": None, "tries": (rec.get("tries", 0) if rec else 0) + 1}
         checked += 1
     have = sum(1 for v in events.values() if v.get("video"))
-    log.info("match_events: +%d checked (%d failed, retry later); %d/%d have a video",
-             checked, failed, have, len(events))
+    log.info("match_events: %d looked up (+%d new videos, %d failed); %d/%d have a video",
+             checked, found, failed, have, len(events))
     return events
 
 

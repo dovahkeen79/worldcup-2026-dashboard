@@ -19,7 +19,7 @@
   .wrap{max-width:1180px;margin:0 auto;padding:0 18px 60px;}
 
   header{position:sticky;top:0;z-index:20;backdrop-filter:blur(8px);
-    background:rgba(11,18,32,.86);border-bottom:1px solid var(--line);}
+    background:rgba(11,18,32,.96);border-bottom:1px solid var(--line);}
   .head-in{max-width:1180px;margin:0 auto;padding:14px 18px;display:flex;
     align-items:center;gap:14px;flex-wrap:wrap;}
   .brand{font-weight:800;font-size:18px;}
@@ -34,8 +34,9 @@
   .btn:disabled{opacity:.6;cursor:progress;}
   .btn.primary{background:rgba(34,197,94,.16);border-color:rgba(34,197,94,.5);color:var(--accent);}
 
-  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;padding:12px 0 4px;position:sticky;top:57px;
-    z-index:15;background:linear-gradient(180deg,var(--bg),transparent);}
+  /* tabs live INSIDE the sticky header now (one solid, self-sizing sticky bar) */
+  .tabs-wrap{max-width:1180px;margin:0 auto;padding:0 18px 12px;}
+  .tabs{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;}
   .tab{white-space:nowrap;padding:8px 14px;border-radius:999px;border:1px solid var(--line);
     background:var(--panel);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;}
   .tab.active{background:rgba(56,189,248,.15);border-color:rgba(56,189,248,.5);color:var(--accent2);}
@@ -180,10 +181,10 @@
     <button class="btn primary" id="refreshBtn" onclick="refresh()">↻ Refresh data</button>
     {% endif %}
   </div>
+  <div class="tabs-wrap"><div class="tabs" id="tabs"></div></div>
 </header>
 
 <div class="wrap">
-  <div class="tabs" id="tabs"></div>
   <div id="liveNote"></div>
   <div class="toolbar">
     <input class="search" id="search" placeholder="🔎 Filter by team (e.g. England, Argentina)…" oninput="onFilter(this.value)">
@@ -316,7 +317,6 @@ function renderOverview(){
     h+=`<div class="panel"><h3>Biggest results so far</h3>`+
       s.highlights.map(x=>`<div class="fav"><span>${flagInline(x.home)}${esc(x.home)} <b>${x.home_score}–${x.away_score}</b> ${flagInline(x.away)}${esc(x.away)}</span><span class="kv">${esc(x.stage)}</span></div>`).join("")+`</div>`;
   }
-  h+=`<p class="hint">Tip: click any match card to expand form, head-to-head, key players and the prediction rationale. Use the tabs to move between rounds, or the Bracket tab for the knockout tree.</p>`;
   return h;
 }
 

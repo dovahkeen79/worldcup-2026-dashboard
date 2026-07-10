@@ -11,6 +11,7 @@ which uses the `x-apisports-key` header.
 
 import json
 import os
+import urllib.parse
 import urllib.request
 
 KEY = os.environ.get("API_FOOTBALL_KEY", "").strip()
@@ -18,6 +19,10 @@ BASE = "https://v3.football.api-sports.io"
 
 
 def call(path):
+    # Encode spaces / special chars in the query string.
+    if "?" in path:
+        base, qs = path.split("?", 1)
+        path = base + "?" + urllib.parse.quote(qs, safe="=&")
     req = urllib.request.Request(BASE + path, headers={"x-apisports-key": KEY})
     with urllib.request.urlopen(req, timeout=30) as r:
         return json.load(r)

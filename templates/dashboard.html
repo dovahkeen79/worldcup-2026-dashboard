@@ -214,6 +214,9 @@ function badge(team,size){
 // without a mapped flag (or if the image fails to load).
 function crest(team,size){
   size=size||34;
+  // Placeholder ("Winner Match 98") -> neutral "?" instead of a fake team crest.
+  if(isPlaceholder(team))
+    return `<div class="crest-fb" style="width:${size}px;height:${size}px;background:var(--neutral);opacity:.55;font-size:${Math.round(size*0.5)}px">?</div>`;
   const url=FLAGS[teamKey(team)];
   if(!url) return badge(team,size);
   const h=Math.round(size*0.72);

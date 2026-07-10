@@ -37,15 +37,15 @@ jobs:
       - name: Scrape live data and build the static site
         run: python build_static.py
 
-      - name: Commit updated predictions log
+      - name: Commit updated predictions log & captured match events
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add predictions_log.json
+          git add predictions_log.json match_events.json
           if git diff --staged --quiet; then
-            echo "No prediction-log changes."
+            echo "No prediction-log or match-events changes."
           else
-            git commit -m "Update predictions log [skip ci]"
+            git commit -m "Update predictions log & match events [skip ci]"
             git push
           fi
 

@@ -15,6 +15,7 @@ Reused by the CLI (`python build_data.py`) and the Flask "Refresh" button.
 from datetime import datetime
 
 from agents import h2h as h2h_mod
+from agents import match_events as mev
 from agents import predictions_log as plog
 from agents.goalscorers import fetch_top_scorers
 from agents.livescores import attach_event_ids
@@ -34,6 +35,8 @@ log = get_logger("build_data")
 TOURNAMENT_JSON = "tournament.json"
 # Persisted, forward-only prediction log (committed back by the GitHub Action).
 PREDICTIONS_LOG_PATH = ROOT / "predictions_log.json"
+# Capture-once store of finished-match highlight videos (committed back too).
+MATCH_EVENTS_PATH = ROOT / "match_events.json"
 
 
 def build_and_save():
@@ -73,6 +76,13 @@ def build_and_save():
     # Attach "form going in" to every finished match, computed from results we
     # already have (no extra scraping) so their detail panels are worth opening.
     _attach_finished_form(matches, played)
+
+    # Capture-once highlight videos (TheSportsDB) for finished matches, then
+    # attach m['video'] so the detail panel can show a "Watch highlights" link.
+    mev_store = mev.load(MATCH_EVENTS_PATH)
+    mev.capture(mev_store, matches)
+    mev.save(MATCH_EVENTS_PATH, mev_store)
+    mev.attach(mev_store, matches)
 
     # ---- Forward-only prediction log: record new, resolve finished --------- #
     now = london_now()

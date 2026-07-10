@@ -9,7 +9,7 @@
     --bg:#0b1220; --panel:#111c33; --panel2:#0e1830; --line:#1e2c4a;
     --ink:#e8eefc; --muted:#8ea3c9; --accent:#22c55e; --accent2:#38bdf8;
     --win:#22c55e; --draw:#f59e0b; --loss:#ef4444;
-    --home:#22c55e; --away:#6366f1;
+    --home:#22c55e; --away:#6366f1; --neutral:#2a3a5c;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:radial-gradient(1200px 600px at 50% -240px,#16233f,var(--bg));
@@ -100,6 +100,24 @@
     font-size:11px;font-weight:800;color:#08111f;margin:0 4px 4px 0;}
   .fp.W{background:var(--win);} .fp.D{background:var(--draw);} .fp.L{background:var(--loss);color:#fff;}
   .kv{font-size:12.5px;color:var(--muted);}
+  /* Match-info line + goals timeline (finished-match detail) */
+  .matchinfo{font-size:12.5px;color:var(--muted);margin-bottom:10px;line-height:1.6;}
+  .matchinfo .dot{margin:0 7px;opacity:.5;}
+  .timeline{margin-top:4px;}
+  .tl-goal{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .tl-goal:last-child{border-bottom:0;}
+  .tl-min{font-weight:800;color:var(--accent);min-width:36px;font-size:12.5px;flex:none;}
+  .player-badge{display:inline-flex;align-items:center;gap:7px;background:var(--panel);
+    border:1px solid var(--line);border-radius:999px;padding:3px 12px 3px 3px;font-size:13px;color:var(--ink);}
+  .avatar{width:22px;height:22px;border-radius:50%;background:var(--neutral);
+    display:inline-flex;align-items:center;justify-content:center;flex:none;}
+  .avatar svg{width:14px;height:14px;fill:#9fb3d6;}
+  .tl-team{margin-left:auto;display:inline-flex;align-items:center;gap:6px;}
+  .tl-team .ball{font-size:13px;}
+  .btn-hl{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:999px;
+    font-size:13px;font-weight:700;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.5);
+    color:#fca5a5;}
+  .btn-hl:hover{background:rgba(239,68,68,.25);color:#fecaca;}
   ul.plist{margin:4px 0 0;padding:0;list-style:none;font-size:12.5px;}
   ul.plist li{display:flex;justify-content:space-between;gap:8px;padding:3px 0;border-bottom:1px dashed var(--line);}
   ul.plist li:last-child{border-bottom:0;}
@@ -441,9 +459,18 @@ function finishedDetail(m){
     const wp=m.winner===m.home?m.pens.home:m.pens.away, lp=m.winner===m.home?m.pens.away:m.pens.home;
     penTxt=` ${m.aet?"(a.e.t.) ":""}· <b>${esc(m.winner)} win ${wp}–${lp} on penalties</b>`;
   } else if(m.aet){ penTxt=" (a.e.t.)"; }
-  let h=`<div class="kv" style="margin-bottom:10px">Final score: <b>${m.home_score}–${m.away_score}</b>${penTxt}`+
-        `${m.venue?` · ${esc(m.venue)}${m.city?", "+esc(m.city):""}`:""}</div>`;
-  h+=`<div class="grid2">
+  let h=`<div class="kv" style="margin-bottom:6px">Final score: <b>${m.home_score}–${m.away_score}</b>${penTxt}</div>`;
+  // Match info: venue/city · attendance · referee.
+  const info=[];
+  if(m.venue) info.push(`🏟 ${esc(m.venue)}${m.city?", "+esc(m.city):""}`);
+  if(m.attendance) info.push(`👥 ${esc(m.attendance)}`);
+  if(m.referee) info.push(`🧑‍⚖️ ${esc(m.referee)}`);
+  if(info.length) h+=`<div class="matchinfo">${info.join('<span class="dot">·</span>')}</div>`;
+  // Goals timeline (scorer + minute; neutral silhouette avatars, no photos).
+  h+=goalsTimeline(m);
+  // Highlights — only when TheSportsDB actually has a video; opens a new tab.
+  if(m.video) h+=`<div style="margin:10px 0 2px"><a class="btn-hl" href="${esc(m.video)}" target="_blank" rel="noopener">▶ Watch highlights</a></div>`;
+  h+=`<div class="grid2" style="margin-top:12px">
     <div class="blk"><h5>${esc(m.home)} — form going in</h5>${formBlock({results:m.home_form})}</div>
     <div class="blk"><h5>${esc(m.away)} — form going in</h5>${formBlock({results:m.away_form})}</div>
   </div>`;
@@ -452,6 +479,21 @@ function finishedDetail(m){
     <div class="blk"><h5>${esc(m.away)} — key players</h5>${squadBlock(tA.squad)}</div>
   </div>`;
   return h;
+}
+// Neutral silhouette avatar (inline SVG) — no player photos (copyrighted).
+function avatarIcon(){
+  return `<span class="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 100-8.4 4.2 4.2 0 000 8.4zm0 2.1c-4.2 0-7.6 2.2-7.6 5v1.3h15.2V19.1c0-2.8-3.4-5-7.6-5z"/></svg></span>`;
+}
+function goalsTimeline(m){
+  const gs=m.goals||[];
+  if(!gs.length) return "";
+  const rows=gs.map(g=>{
+    const team=g.team==='home'?m.home:m.away;
+    return `<div class="tl-goal"><span class="tl-min">${g.minute}'</span>`+
+      `<span class="player-badge">${avatarIcon()}<span>${esc(g.player)}</span></span>`+
+      `<span class="tl-team">${flagInline(team)}<span class="ball">⚽</span></span></div>`;
+  }).join("");
+  return `<div class="blk" style="margin-top:10px"><h5>Goals</h5><div class="timeline">${rows}</div></div>`;
 }
 
 function predictionDetail(m){

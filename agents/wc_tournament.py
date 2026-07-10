@@ -136,7 +136,8 @@ def _parse_box(box, stage, group):
     time_el = box.select_one(".ftime")
     time_raw = _clean(time_el.get_text()) if time_el else ""
 
-    venue, city = _parse_venue(box.select_one(".fright"))
+    venue, city, attendance, referee = _parse_match_info(box.select_one(".fright"))
+    goals = _parse_goals(box) if played else []
     london_dt, kickoff_iso = to_london(date_iso, time_raw)
     is_tbd = not (_is_real_team(home) and _is_real_team(away))
 
@@ -175,9 +176,33 @@ def _parse_box(box, stage, group):
         "aet": aet,
         "pens": pens,          # {"home": int, "away": int} or None
         "winner": winner,      # advancing team, or None for a true draw
+        "attendance": attendance,
+        "referee": referee,
+        "goals": goals,        # [{team:'home'/'away', player, minute}] sorted by minute
         "played": played,
         "is_tbd": is_tbd,
     }
+
+
+def _parse_goals(box):
+    """Scorer + minute per goal from the '.fhgoal'/'.fagoal' cells."""
+    goals = []
+    for side, sel in (("home", ".fhgoal"), ("away", ".fagoal")):
+        cell = box.select_one(sel)
+        if not cell:
+            continue
+        for li in (cell.select("li") or [cell]):
+            t = _clean(li.get_text(" "))
+            if not t:
+                continue
+            player = re.sub(r"\s*\d+(?:\+\d+)?['′].*$", "", t).strip()
+            player = re.sub(r"\s*\(.*?\)\s*$", "", player).strip()
+            if not player:
+                continue
+            for mn in re.findall(r"(\d+)(?:\+\d+)?['′]", t):
+                goals.append({"team": side, "player": player, "minute": int(mn)})
+    goals.sort(key=lambda g: g["minute"])
+    return goals
 
 
 def _parse_penalties(box):
@@ -192,15 +217,21 @@ def _parse_penalties(box):
     return {"home": int(ms.group(1)), "away": int(ms.group(2))}
 
 
-def _parse_venue(right_el):
+def _parse_match_info(right_el):
+    """Return (venue, city, attendance, referee) from the '.fright' block."""
     if right_el is None:
-        return "", ""
+        return "", "", None, None
     text = _clean(right_el.get_text(" "))
-    text = re.split(r"\bAttendance\b|\bReferee\b", text)[0].strip()
-    if not text:
-        return "", ""
-    parts = [p.strip() for p in text.split(",", 1)]
-    return parts[0], (parts[1] if len(parts) > 1 else "")
+    att = re.search(r"Attendance:\s*([\d,]+)", text)
+    ref = re.search(r"Referee:\s*(.+)$", text)
+    referee = None
+    if ref:
+        referee = re.sub(r"\s*\)", ")", re.sub(r"\(\s*", "(", ref.group(1).strip()))
+    head = re.split(r"\bAttendance\b|\bReferee\b", text)[0].strip()
+    parts = [p.strip() for p in head.split(",", 1)] if head else [""]
+    venue = parts[0]
+    city = parts[1] if len(parts) > 1 else ""
+    return venue, city, (att.group(1) if att else None), referee
 
 
 def _nearest_round(box):

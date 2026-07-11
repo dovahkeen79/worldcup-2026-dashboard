@@ -72,5 +72,17 @@
     "confidence": 36,
     "made_at": "2026-07-10T23:02:31+01:00",
     "resolved": false
+  },
+  {
+    "key": "Spain|France|2026-07-14",
+    "home": "Spain",
+    "away": "France",
+    "date_iso": "2026-07-14",
+    "stage": "Semi-finals",
+    "predicted_team": "Spain",
+    "predicted_side": "home",
+    "confidence": 36,
+    "made_at": "2026-07-11T13:05:47+01:00",
+    "resolved": false
   }
 ]

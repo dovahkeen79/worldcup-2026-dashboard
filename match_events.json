@@ -154,7 +154,7 @@
   },
   "England|Croatia|2026-06-17": {
     "video": null,
-    "tries": 10
+    "tries": 11
   },
   "Ghana|Panama|2026-06-17": {
     "video": "https://www.youtube.com/watch?v=WHou9WL37po"
@@ -293,6 +293,6 @@
   },
   "Spain|Belgium|2026-07-10": {
     "video": null,
-    "tries": 4
+    "tries": 5
   }
 }

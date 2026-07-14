@@ -299,5 +299,9 @@
   },
   "Argentina|Switzerland|2026-07-11": {
     "video": "https://www.youtube.com/watch?v=zUIUW2Z4lj0"
+  },
+  "France|Spain|2026-07-14": {
+    "video": null,
+    "tries": 1
   }
 }

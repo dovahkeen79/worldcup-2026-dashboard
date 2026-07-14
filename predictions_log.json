@@ -85,7 +85,14 @@
     "predicted_side": "away",
     "confidence": 36,
     "made_at": "2026-07-10T23:02:31+01:00",
-    "resolved": false
+    "resolved": true,
+    "actual_home": 0,
+    "actual_away": 2,
+    "actual_side": "away",
+    "actual_winner": "Spain",
+    "pens": null,
+    "correct": true,
+    "resolved_at": "2026-07-14T22:38:35+01:00"
   },
   {
     "key": "Spain|France|2026-07-14",

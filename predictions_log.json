@@ -116,6 +116,37 @@
     "predicted_side": "away",
     "confidence": 36,
     "made_at": "2026-07-12T05:39:28+01:00",
+    "resolved": true,
+    "actual_home": 1,
+    "actual_away": 2,
+    "actual_side": "away",
+    "actual_winner": "Argentina",
+    "pens": null,
+    "correct": true,
+    "resolved_at": "2026-07-15T22:15:07+01:00"
+  },
+  {
+    "key": "France|England|2026-07-18",
+    "home": "France",
+    "away": "England",
+    "date_iso": "2026-07-18",
+    "stage": "Third place play-off",
+    "predicted_team": "England",
+    "predicted_side": "away",
+    "confidence": 40,
+    "made_at": "2026-07-15T22:15:07+01:00",
+    "resolved": false
+  },
+  {
+    "key": "Spain|Argentina|2026-07-19",
+    "home": "Spain",
+    "away": "Argentina",
+    "date_iso": "2026-07-19",
+    "stage": "Final",
+    "predicted_team": "Argentina",
+    "predicted_side": "away",
+    "confidence": 39,
+    "made_at": "2026-07-15T22:15:07+01:00",
     "resolved": false
   }
 ]

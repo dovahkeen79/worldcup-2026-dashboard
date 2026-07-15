@@ -302,5 +302,9 @@
   },
   "France|Spain|2026-07-14": {
     "video": "https://www.youtube.com/watch?v=_cV8QcKp3GU"
+  },
+  "England|Argentina|2026-07-15": {
+    "video": null,
+    "tries": 1
   }
 }

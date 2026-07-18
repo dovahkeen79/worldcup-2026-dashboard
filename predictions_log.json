@@ -135,7 +135,14 @@
     "predicted_side": "away",
     "confidence": 40,
     "made_at": "2026-07-15T22:15:07+01:00",
-    "resolved": false
+    "resolved": true,
+    "actual_home": 4,
+    "actual_away": 6,
+    "actual_side": "away",
+    "actual_winner": "England",
+    "pens": null,
+    "correct": true,
+    "resolved_at": "2026-07-19T00:26:47+01:00"
   },
   {
     "key": "Spain|Argentina|2026-07-19",

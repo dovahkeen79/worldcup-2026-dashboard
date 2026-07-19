@@ -154,6 +154,13 @@
     "predicted_side": "away",
     "confidence": 39,
     "made_at": "2026-07-15T22:15:07+01:00",
-    "resolved": false
+    "resolved": true,
+    "actual_home": 1,
+    "actual_away": 0,
+    "actual_side": "home",
+    "actual_winner": "Spain",
+    "pens": null,
+    "correct": false,
+    "resolved_at": "2026-07-19T23:51:39+01:00"
   }
 ]

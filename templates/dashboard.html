@@ -484,12 +484,17 @@ function finishedDetail(m){
 function avatarIcon(){
   return `<span class="avatar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4.2 4.2 0 100-8.4 4.2 4.2 0 000 8.4zm0 2.1c-4.2 0-7.6 2.2-7.6 5v1.3h15.2V19.1c0-2.8-3.4-5-7.6-5z"/></svg></span>`;
 }
+// Minute is a string like "23" or "90+2"; sort by (base, added) so 90 < 90+2 < 91.
+function goalMinKey(min){
+  const mm=String(min==null?"":min).match(/^(\d+)(?:\+(\d+))?/);
+  return mm ? parseInt(mm[1],10)*1000 + (mm[2]?parseInt(mm[2],10):0) : 0;
+}
 function goalsTimeline(m){
-  const gs=m.goals||[];
+  const gs=(m.goals||[]).slice().sort((a,b)=>goalMinKey(a.minute)-goalMinKey(b.minute));
   if(!gs.length) return "";
   const rows=gs.map(g=>{
     const team=g.team==='home'?m.home:m.away;
-    return `<div class="tl-goal"><span class="tl-min">${g.minute}'</span>`+
+    return `<div class="tl-goal"><span class="tl-min">${esc(String(g.minute))}'</span>`+
       `<span class="player-badge">${avatarIcon()}<span>${esc(g.player)}</span></span>`+
       `<span class="tl-team">${flagInline(team)}<span class="ball">⚽</span></span></div>`;
   }).join("");

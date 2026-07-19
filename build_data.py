@@ -103,6 +103,26 @@ def build_and_save():
                 "actual_winner": rec.get("actual_winner"),
             }
     accuracy = plog.accuracy(pred_log)
+    # Per-prediction history for the expandable "Model accuracy" tile
+    # (resolved picks only, most-recent first).
+    accuracy["history"] = [
+        {
+            "home": e["home"], "away": e["away"],
+            "date_iso": e.get("date_iso"), "stage": e.get("stage"),
+            "predicted_team": e.get("predicted_team"),
+            "confidence": e.get("confidence"),
+            "actual_home": e.get("actual_home"),
+            "actual_away": e.get("actual_away"),
+            "actual_winner": e.get("actual_winner"),
+            "pens": e.get("pens"),
+            "correct": bool(e.get("correct")),
+        }
+        for e in sorted(
+            (e for e in pred_log if e.get("resolved")),
+            key=lambda e: (e.get("date_iso") or "", e.get("resolved_at") or ""),
+            reverse=True,
+        )
+    ]
     log.info("Prediction accuracy: %d/%d correct (%d%%)",
              accuracy["correct"], accuracy["resolved"], accuracy["pct"])
 
@@ -264,7 +284,7 @@ def _empty_payload():
             "source": "unavailable", "is_sample": False, "stages_order": [],
             "current_stage": None,
             "groups": [], "matches": [], "teams": {},
-            "accuracy": {"resolved": 0, "correct": 0, "pct": 0},
+            "accuracy": {"resolved": 0, "correct": 0, "pct": 0, "history": []},
             "stats": {}, "statspage": {}, "counts": {}}
 
 

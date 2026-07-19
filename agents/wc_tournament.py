@@ -178,14 +178,21 @@ def _parse_box(box, stage, group):
         "winner": winner,      # advancing team, or None for a true draw
         "attendance": attendance,
         "referee": referee,
-        "goals": goals,        # [{team:'home'/'away', player, minute}] sorted by minute
+        "goals": goals,        # [{team:'home'/'away', player, minute:"90+2"}] sorted chronologically
         "played": played,
         "is_tbd": is_tbd,
     }
 
 
 def _parse_goals(box):
-    """Scorer + minute per goal from the '.fhgoal'/'.fagoal' cells."""
+    """Scorer + minute per goal from the '.fhgoal'/'.fagoal' cells.
+
+    Minute is kept as a display string so stoppage / extra time survives:
+    a "90+2'" cell is stored as "90+2" (not collapsed to 90), a plain "23'"
+    as "23". Goals are sorted chronologically by (base, added) so 90 < 90+2
+    < 91 — the JSON array is emitted already ordered and the client renders
+    it in place, so the string format never breaks the timeline order.
+    """
     goals = []
     for side, sel in (("home", ".fhgoal"), ("away", ".fagoal")):
         cell = box.select_one(sel)
@@ -199,9 +206,18 @@ def _parse_goals(box):
             player = re.sub(r"\s*\(.*?\)\s*$", "", player).strip()
             if not player:
                 continue
-            for mn in re.findall(r"(\d+)(?:\+\d+)?['′]", t):
-                goals.append({"team": side, "player": player, "minute": int(mn)})
-    goals.sort(key=lambda g: g["minute"])
+            # Capture BOTH the base minute and any "+X" added time.
+            for base, added in re.findall(r"(\d+)(?:\+(\d+))?['′]", t):
+                b = int(base)
+                a = int(added) if added else 0
+                minute = f"{b}+{a}" if a else str(b)
+                goals.append({"team": side, "player": player,
+                              "minute": minute, "_base": b, "_added": a})
+    # Explicit chronological sort: base first, then added time within it.
+    goals.sort(key=lambda g: (g["_base"], g["_added"]))
+    for g in goals:
+        del g["_base"]
+        del g["_added"]
     return goals
 
 

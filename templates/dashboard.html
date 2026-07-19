@@ -150,6 +150,30 @@
   .stat .n{font-size:26px;font-weight:800;}
   .stat .l{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;}
   .stat .sub{color:var(--muted);font-size:10.5px;margin-top:5px;line-height:1.35;opacity:.85;}
+  /* Expandable "Model accuracy" tile -> inline prediction history */
+  .stat.acc.expandable{cursor:pointer;}
+  .stat.acc .accx{font-size:11px;color:var(--muted);display:inline-block;transition:transform .15s;}
+  .pred-wrap{display:none;margin:-6px 0 16px;}
+  .pred-wrap.open{display:block;}
+  .pred-hd{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--muted);margin:0 2px 8px;}
+  .pred-list{background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;}
+  .pred-row{display:flex;align-items:center;gap:8px 14px;flex-wrap:wrap;
+    padding:11px 14px;border-top:1px solid var(--line);}
+  .pred-row:first-child{border-top:none;}
+  .pred-match{flex:1 1 200px;min-width:0;font-weight:700;font-size:13.5px;}
+  .pred-sub{color:var(--muted);font-weight:600;font-size:11px;margin-top:2px;}
+  .pred-mid{display:flex;flex-direction:column;gap:2px;font-size:12px;min-width:120px;}
+  .pred-pick{color:var(--muted);} .pred-pick b{color:var(--ink);}
+  .pred-score{font-weight:800;font-size:14px;}
+  .pred-score .pens{color:var(--muted);font-weight:700;font-size:11px;}
+  .pred-badge{flex:none;font-size:11.5px;font-weight:800;padding:4px 10px;
+    border-radius:999px;white-space:nowrap;}
+  .pred-badge.ok{background:rgba(34,197,94,.15);color:var(--win);border:1px solid rgba(34,197,94,.4);}
+  .pred-badge.no{background:rgba(239,68,68,.15);color:var(--loss);border:1px solid rgba(239,68,68,.4);}
+  .pred-hide{display:block;text-align:center;margin:11px 2px 2px;color:var(--accent2);
+    font-size:12.5px;font-weight:700;cursor:pointer;user-select:none;}
   .panel{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--line);
     border-radius:14px;padding:14px 16px;margin-bottom:14px;}
   .panel h3{margin:0 0 10px;font-size:15px;}
@@ -187,7 +211,10 @@
     .stat .n{font-size:16px;line-height:1.1;}
     .stat .l{font-size:8.5px;letter-spacing:.03em;}
     .stat .sub{font-size:8px;margin-top:2px;line-height:1.2;}
-    .stat.acc{grid-column:1 / -1;text-align:center;}}   /* full-width, centred */
+    .stat.acc{grid-column:1 / -1;text-align:center;}
+    .pred-match{flex-basis:100%;font-size:12.5px;}
+    .pred-mid{min-width:0;flex-direction:row;gap:10px;align-items:baseline;font-size:11px;}
+    .pred-row{gap:6px 10px;padding:9px 11px;}}   /* full-width, centred */
 </style>
 </head>
 <body>
@@ -316,16 +343,21 @@ function renderOverview(){
   const c=DATA.counts||{}, s=DATA.stats||{}, acc=DATA.accuracy||{resolved:0,correct:0,pct:0};
   const accN = acc.resolved ? `${acc.correct}/${acc.resolved}` : "—";
   const accL = acc.resolved ? `Model accuracy · ${acc.pct}%` : "Model accuracy";
-  const accSub = acc.resolved ? "How often our match predictions were correct"
+  const hasHist = !!(acc.resolved && (acc.history||[]).length);
+  const accSub = acc.resolved ? (hasHist ? "How often our predictions were correct · tap for each pick"
+                                         : "How often our match predictions were correct")
                               : "No predictions resolved yet";
+  const accTap = hasHist ? ` role="button" tabindex="0" onclick="togglePredHistory()"`
+    + ` onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();togglePredHistory();}"` : "";
   LIVE.nowSig="";   // fresh Overview DOM -> force the "Live now" section to repopulate
   let h=`<div id="liveNowSection"></div><div class="stat-row">
     <div class="stat"><div class="n">${c.matches||0}</div><div class="l">Matches</div></div>
     <div class="stat"><div class="n">${c.played||0}</div><div class="l">Played</div></div>
     <div class="stat"><div class="n">${c.upcoming||0}</div><div class="l">Upcoming</div></div>
     <div class="stat"><div class="n">${s.total_goals||0}</div><div class="l">Goals scored</div></div>
-    <div class="stat acc"><div class="n">${accN}</div><div class="l">${accL}</div><div class="sub">${accSub}</div></div>
+    <div class="stat acc${hasHist?" expandable":""}"${accTap}><div class="n">${accN}</div><div class="l">${accL}${hasHist?` <span class="accx" id="accChev">⌄</span>`:""}</div><div class="sub">${accSub}</div></div>
   </div>`;
+  if(hasHist) h+=predHistoryPanel(acc);
   if((s.favourites||[]).length){
     h+=`<div class="panel">`+
       `<div class="fav"><span class="l">Upcoming</span><span class="l">Prediction</span></div>`+
@@ -336,6 +368,45 @@ function renderOverview(){
       s.highlights.map(x=>`<div class="fav"><span>${flagInline(x.home)}${esc(x.home)} <b>${x.home_score}–${x.away_score}</b> ${flagInline(x.away)}${esc(x.away)}</span><span class="kv">${esc(x.stage)}</span></div>`).join("")+`</div>`;
   }
   return h;
+}
+
+/* Inline prediction-history panel that drops open under the accuracy tile. */
+function predHistoryPanel(acc){
+  const rows=(acc.history||[]).map(p=>{
+    const ok=!!p.correct;
+    const score=(p.actual_home!=null&&p.actual_away!=null)?`${p.actual_home}–${p.actual_away}`:"—";
+    const pens=(p.pens&&p.pens.home!=null&&p.pens.away!=null)
+      ?` <span class="pens">(pens ${p.pens.home}–${p.pens.away})</span>`:"";
+    const sub=[p.stage,fmtPredDate(p.date_iso)].filter(Boolean).join(" · ");
+    return `<div class="pred-row">`+
+      `<div class="pred-match">${flagInline(p.home)}${esc(p.home)} `+
+        `<span style="color:var(--muted)">v</span> ${flagInline(p.away)}${esc(p.away)}`+
+        (sub?`<div class="pred-sub">${esc(sub)}</div>`:"")+`</div>`+
+      `<div class="pred-mid">`+
+        `<div class="pred-pick">Predicted <b>${esc(p.predicted_team||"—")}</b>`+
+          `${p.confidence!=null?` · ${p.confidence}%`:""}</div>`+
+        `<div class="pred-score">${score}${pens}</div>`+
+      `</div>`+
+      `<div class="pred-badge ${ok?"ok":"no"}">${ok?"✅ Correct":"❌ Wrong"}</div>`+
+    `</div>`;
+  }).join("");
+  return `<div class="pred-wrap" id="predWrap">`+
+    `<div class="pred-hd">Prediction history · ${acc.correct}/${acc.resolved} correct (${acc.pct}%)</div>`+
+    `<div class="pred-list">${rows}</div>`+
+    `<div class="pred-hide" onclick="togglePredHistory()">Hide predictions ⌃</div>`+
+  `</div>`;
+}
+function togglePredHistory(){
+  const w=document.getElementById("predWrap");
+  if(!w) return;
+  const open=w.classList.toggle("open");
+  const ch=document.getElementById("accChev");
+  if(ch) ch.textContent=open?"⌃":"⌄";
+}
+function fmtPredDate(iso){
+  if(!iso) return "";
+  const d=new Date(iso+"T00:00:00");
+  return isNaN(d)?iso:d.toLocaleDateString(undefined,{day:"numeric",month:"short"});
 }
 
 /* ---------- Stats tab ---------- */
